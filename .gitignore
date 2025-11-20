@@ -2,3 +2,13 @@
 notebooks
 docs
 START_HERE.md
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+.DS_Store
+chroma_db/
