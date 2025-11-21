@@ -30,9 +30,9 @@ The system will:
 |----------|---------|-------------------|
 | **README.md** | This file - quick overview | You're starting the project |
 | **IMPLEMENTATION_ROADMAP.md** | Executive summary & timeline | You want the big picture |
-| **PRE_PHASE_1_LANGCHAIN.md** | ✨ **Main plan (LangChain)** | You're ready to start coding |
-| **QUICK_START_LANGCHAIN.md** | ✨ **Day-by-day checklist** | You want a daily task list |
-| **SEMANTIC_KERNEL_VS_LANGCHAIN.md** | Why LangChain over Semantic Kernel | Understanding the framework choice |
+| **PRE_PHASE_1_SK.md** | ✨ **Main plan (Semantic Kernel)** | You're ready to start coding |
+| **QUICK_START_SK.md** | ✨ **Day-by-day checklist** | You want a daily task list |
+| **SEMANTIC_KERNEL_VS_LANGCHAIN.md** | Framework comparison | Understanding framework trade-offs |
 | **EARTH_COPILOT_ANALYSIS.md** | Architecture decisions & lessons | Understanding design patterns |
 | **MCP_SERVER_ANALYSIS.md** | Why not MCP for MVP | Wondering about Model Context Protocol |
 
@@ -43,9 +43,8 @@ The system will:
 ### Tech Stack
 
 **Backend:**
-- Python 3.11+ with FastAPI
-- **LangChain + LangGraph** (agent orchestration)
-- **LangSmith** (production observability)
+- Python 3.12+ with FastAPI
+- **Semantic Kernel** (agent orchestration)
 - Azure OpenAI (GPT-4 for LLM)
 - ChromaDB (vector store for RAG)
 - Docker (sandboxed code execution)
@@ -62,14 +61,14 @@ The system will:
 
 ### Multi-Agent Architecture
 
-The system uses **4 specialized AI agents** orchestrated by **LangGraph**:
+The system uses **4 specialized AI agents** orchestrated by **Semantic Kernel**:
 
 1. **Query Parser Agent** - Extracts intent, collections, location, datetime
 2. **Geocoding & Temporal Agent** - Resolves locations and dates (multi-strategy fallback)
 3. **STAC Query Coordinator Agent** - Executes searches and optimizes results
 4. **Response Synthesizer Agent** - Generates natural language responses or Python code
 
-**Framework:** LangChain + LangGraph (industry standard, 60-70% market share)
+**Framework:** Semantic Kernel (Microsoft's LLM orchestration framework)
 **Inspired by:** Microsoft Earth Copilot (simplified from 13 agents to 4)
 
 ---
@@ -134,10 +133,10 @@ python scripts/test_geocoding.py     # Test geocoding
 ### What to Do Next
 
 **Option 1: Start Pre-Phase 1 immediately**
-1. Open `PRE_PHASE_1_UPDATED.md`
+1. Open `PRE_PHASE_1_SK.md`
 2. Read through Week 0, Day 1
 3. Follow the tasks step by step
-4. Use `QUICK_START_CHECKLIST.md` for daily reference
+4. Use `QUICK_START_SK.md` for daily reference
 
 **Option 2: Understand the architecture first**
 1. Read `IMPLEMENTATION_ROADMAP.md` (executive summary)
@@ -203,9 +202,10 @@ epi-geo-chat/
 ├── .gitignore
 ├── README.md                # This file
 ├── IMPLEMENTATION_ROADMAP.md
-├── PRE_PHASE_1_UPDATED.md
-├── QUICK_START_CHECKLIST.md
+├── PRE_PHASE_1_SK.md
+├── QUICK_START_SK.md
 ├── EARTH_COPILOT_ANALYSIS.md
+├── SEMANTIC_KERNEL_VS_LANGCHAIN.md
 └── MCP_SERVER_ANALYSIS.md
 ```
 
@@ -213,15 +213,15 @@ epi-geo-chat/
 
 ## 🎓 Key Decisions & Rationale
 
-### Why LangChain (Not Semantic Kernel)?
-- **Industry standard** - 60-70% market share vs SK's 5-10%
-- **LangGraph** - State-of-the-art multi-agent orchestration
-- **LangSmith** - Production observability & debugging platform
-- **Larger community** - 78K GitHub stars vs SK's 20K
-- **Better ecosystem** - 100+ vector stores, 1000+ integrations
-- **Cloud-agnostic** - Not locked into Azure
+### Why Semantic Kernel?
+- **Microsoft-backed** - Official Microsoft framework for AI orchestration
+- **Azure integration** - Native support for Azure OpenAI and Azure services
+- **Enterprise-ready** - Designed for production workloads
+- **Clean architecture** - Plugin-based system for modular agents
+- **Active development** - Continuous improvements and updates
+- **.NET + Python** - Cross-platform support
 
-See `SEMANTIC_KERNEL_VS_LANGCHAIN.md` for detailed comparison.
+See `SEMANTIC_KERNEL_VS_LANGCHAIN.md` for detailed comparison with alternatives.
 
 ### Why 4 Agents (Not 13 like Earth Copilot)?
 - Earth Copilot serves general geospatial use cases (military, disaster response, etc.)
@@ -352,7 +352,7 @@ This is a research project. For now:
 
 **2024-11-19:** Pre-Phase 1 planning complete
 - Analyzed Microsoft Earth Copilot
-- Decided on Semantic Kernel + 4-agent architecture
+- Chose Semantic Kernel for agent orchestration (4-agent architecture)
 - Decided against MCP for MVP
 - Created comprehensive implementation plan
 - Ready to start Day 1 of Pre-Phase 1
