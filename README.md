@@ -30,8 +30,8 @@ The system will:
 |----------|---------|-------------------|
 | **README.md** | This file - quick overview | You're starting the project |
 | **IMPLEMENTATION_ROADMAP.md** | Executive summary & timeline | You want the big picture |
-| **PRE_PHASE_1_SK.md** | ✨ **Main plan (Semantic Kernel)** | You're ready to start coding |
-| **QUICK_START_SK.md** | ✨ **Day-by-day checklist** | You want a daily task list |
+| **PRE_PHASE_1_AF.md** | ✨ **Main plan (Agent Framework)** | You're ready to start coding |
+| **QUICK_START_AF.md** | ✨ **Day-by-day checklist** | You want a daily task list |
 | **SEMANTIC_KERNEL_VS_LANGCHAIN.md** | Framework comparison | Understanding framework trade-offs |
 | **EARTH_COPILOT_ANALYSIS.md** | Architecture decisions & lessons | Understanding design patterns |
 | **MCP_SERVER_ANALYSIS.md** | Why not MCP for MVP | Wondering about Model Context Protocol |
@@ -44,7 +44,7 @@ The system will:
 
 **Backend:**
 - Python 3.12+ with FastAPI
-- **Semantic Kernel** (agent orchestration)
+- **Microsoft Agent Framework** (multi-agent orchestration)
 - Azure OpenAI (GPT-4 for LLM)
 - ChromaDB (vector store for RAG)
 - Docker (sandboxed code execution)
@@ -61,14 +61,14 @@ The system will:
 
 ### Multi-Agent Architecture
 
-The system uses **4 specialized AI agents** orchestrated by **Semantic Kernel**:
+The system uses **4 specialized AI agents** orchestrated by **Microsoft Agent Framework**:
 
 1. **Query Parser Agent** - Extracts intent, collections, location, datetime
 2. **Geocoding & Temporal Agent** - Resolves locations and dates (multi-strategy fallback)
 3. **STAC Query Coordinator Agent** - Executes searches and optimizes results
 4. **Response Synthesizer Agent** - Generates natural language responses or Python code
 
-**Framework:** Semantic Kernel (Microsoft's LLM orchestration framework)
+**Framework:** Microsoft Agent Framework (graph-based multi-agent orchestration)
 **Inspired by:** Microsoft Earth Copilot (simplified from 13 agents to 4)
 
 ---
@@ -125,18 +125,18 @@ cp .env.example .env
 # Edit .env with your Azure credentials
 
 # 5. Verify setup
-python scripts/test_kernel.py        # Test Azure OpenAI
-python scripts/test_stac.py          # Test GeoCatalog access
-python scripts/test_geocoding.py     # Test geocoding
+python scripts/test_agent_framework.py  # Test Agent Framework + Azure OpenAI
+python scripts/test_stac.py             # Test GeoCatalog access
+python scripts/test_geocoding.py        # Test geocoding
 ```
 
 ### What to Do Next
 
 **Option 1: Start Pre-Phase 1 immediately**
-1. Open `PRE_PHASE_1_SK.md`
+1. Open `PRE_PHASE_1_AF.md`
 2. Read through Week 0, Day 1
 3. Follow the tasks step by step
-4. Use `QUICK_START_SK.md` for daily reference
+4. Use `QUICK_START_AF.md` for daily reference
 
 **Option 2: Understand the architecture first**
 1. Read `IMPLEMENTATION_ROADMAP.md` (executive summary)
@@ -150,7 +150,7 @@ python scripts/test_geocoding.py     # Test geocoding
 ```
 epi-geo-chat/
 ├── src/
-│   ├── agents/              # Semantic Kernel agent plugins
+│   ├── agents/              # Agent Framework agents
 │   │   ├── kernel_config.py
 │   │   ├── query_parser.py
 │   │   ├── geocoding_temporal.py
@@ -202,8 +202,8 @@ epi-geo-chat/
 ├── .gitignore
 ├── README.md                # This file
 ├── IMPLEMENTATION_ROADMAP.md
-├── PRE_PHASE_1_SK.md
-├── QUICK_START_SK.md
+├── PRE_PHASE_1_AF.md
+├── QUICK_START_AF.md
 ├── EARTH_COPILOT_ANALYSIS.md
 ├── SEMANTIC_KERNEL_VS_LANGCHAIN.md
 └── MCP_SERVER_ANALYSIS.md
@@ -213,13 +213,14 @@ epi-geo-chat/
 
 ## 🎓 Key Decisions & Rationale
 
-### Why Semantic Kernel?
-- **Microsoft-backed** - Official Microsoft framework for AI orchestration
+### Why Microsoft Agent Framework?
+- **Next-gen orchestration** - Evolution beyond Semantic Kernel, built for multi-agent systems
+- **Graph-based workflows** - Native support for complex agent pipelines with streaming and checkpointing
+- **Built-in observability** - OpenTelemetry integration for distributed tracing
 - **Azure integration** - Native support for Azure OpenAI and Azure services
-- **Enterprise-ready** - Designed for production workloads
-- **Clean architecture** - Plugin-based system for modular agents
-- **Active development** - Continuous improvements and updates
-- **.NET + Python** - Cross-platform support
+- **DevUI included** - Interactive developer interface for testing and debugging
+- **Python-first** - Modern Python implementation with async support
+- **Production-ready** - Used in Microsoft's latest AI agent solutions
 
 See `SEMANTIC_KERNEL_VS_LANGCHAIN.md` for detailed comparison with alternatives.
 
