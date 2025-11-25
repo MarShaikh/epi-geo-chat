@@ -32,7 +32,6 @@ The system will:
 | **IMPLEMENTATION_ROADMAP.md** | Executive summary & timeline | You want the big picture |
 | **PRE_PHASE_1_AF.md** | ✨ **Main plan (Agent Framework)** | You're ready to start coding |
 | **QUICK_START_AF.md** | ✨ **Day-by-day checklist** | You want a daily task list |
-| **SEMANTIC_KERNEL_VS_LANGCHAIN.md** | Framework comparison | Understanding framework trade-offs |
 | **EARTH_COPILOT_ANALYSIS.md** | Architecture decisions & lessons | Understanding design patterns |
 | **MCP_SERVER_ANALYSIS.md** | Why not MCP for MVP | Wondering about Model Context Protocol |
 
@@ -205,7 +204,6 @@ epi-geo-chat/
 ├── PRE_PHASE_1_AF.md
 ├── QUICK_START_AF.md
 ├── EARTH_COPILOT_ANALYSIS.md
-├── SEMANTIC_KERNEL_VS_LANGCHAIN.md
 └── MCP_SERVER_ANALYSIS.md
 ```
 
@@ -221,8 +219,6 @@ epi-geo-chat/
 - **DevUI included** - Interactive developer interface for testing and debugging
 - **Python-first** - Modern Python implementation with async support
 - **Production-ready** - Used in Microsoft's latest AI agent solutions
-
-See `SEMANTIC_KERNEL_VS_LANGCHAIN.md` for detailed comparison with alternatives.
 
 ### Why 4 Agents (Not 13 like Earth Copilot)?
 - Earth Copilot serves general geospatial use cases (military, disaster response, etc.)
