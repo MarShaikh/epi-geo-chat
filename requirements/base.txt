@@ -17,10 +17,10 @@ pyproj>=3.6.0
 # Azure Services
 azure-identity>=1.15.0
 azure-storage-blob>=12.19.0
-azure-maps-search>=1.0.0  # NEW: Geocoding
+azure-maps-search>=1.0.0 
 
 # Vector Store (RAG)
-chromadb>=0.4.0  # NEW: Simple vector store for MVP
+chromadb>=0.4.0  
 
 # HTTP & Utilities
 httpx>=0.25.0
@@ -34,7 +34,7 @@ seaborn>=0.13.0
 folium>=0.15.0
 
 # Code Execution
-docker>=7.0.0  # For sandboxed execution
+docker>=7.0.0 
 
 # Testing
 pytest>=7.4.0
