@@ -1,6 +1,5 @@
 .env
 notebooks
-docs
 START_HERE.md
 __pycache__/
 *.pyc
