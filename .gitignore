@@ -13,3 +13,4 @@ build/
 .DS_Store
 chroma_db/
 .vscode/
+docs_/
