@@ -11,8 +11,8 @@ collections = client.list_collections()
 inventory = {}
 for coll in collections.get("collections", []):
     collection_id = coll["id"]
-    
-    try: 
+
+    try:
         collection = client.get_collection(collection_id)
         inventory[collection_id] = {
             "id": collection_id,
@@ -35,4 +35,3 @@ with open(output_path, "w") as f:
     json.dump(inventory, f, indent=2)
 
 print(f"Inventory saved to {output_path}")
-        

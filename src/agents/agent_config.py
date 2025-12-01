@@ -1,10 +1,11 @@
-import os 
+import os
 from dotenv import load_dotenv
 
 from agent_framework.azure import AzureOpenAIResponsesClient
 from azure.identity import AzureCliCredential
 
 load_dotenv()
+
 
 def create_agent_client() -> AzureOpenAIResponsesClient:
     """
@@ -22,16 +23,16 @@ def create_agent_client() -> AzureOpenAIResponsesClient:
     # use API key is provided otherwise use Azure CLI Credential
     if api_key:
         return AzureOpenAIResponsesClient(
-            endpoint = endpoint,
-            deployment_name = deployment_name,
-            api_version = api_version,
-            api_key = api_key,
+            endpoint=endpoint,
+            deployment_name=deployment_name,
+            api_version=api_version,
+            api_key=api_key,
         )
 
     else:
         return AzureOpenAIResponsesClient(
-            endpoint = endpoint,
-            deployment_name = deployment_name,
-            api_version = api_version,
-            credential = AzureCliCredential(),
+            endpoint=endpoint,
+            deployment_name=deployment_name,
+            api_version=api_version,
+            credential=AzureCliCredential(),
         )
