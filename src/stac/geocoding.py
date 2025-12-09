@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from typing import Optional, Dict, List
 
 from azure.core.credentials import AzureKeyCredential
+from azure.core.exceptions import HttpResponseError
 from azure.maps.search import MapsSearchClient
 from src.agents.agent_config import create_agent_client
 
@@ -99,20 +100,47 @@ class GeoCodingService:
         """Use Azure Maps to geocode the location."""
         try: 
             search_query = (
-                f"{location}, Nigeria"
-                if "," not in location and "nigeria" not in location.lower()
-                else location
+                location
             )
             result = self.maps_client.get_geocoding(query=search_query) if self.maps_client else None
+            
             if result and result.get("features", False):
-                bbox = result['features'][0]['bbox']
-                min_lon, min_lat, max_lon, max_lat = bbox
-                return {
-                    "name": location,
-                    "bbox": [min_lon, min_lat, max_lon, max_lat]
-                }
+                features = result["features"]
+                nigeria_bbox = REGION["Nigeria"]["bbox"]
+
+                def bbox_inside_nigeria(bbox):
+                    if not bbox or len(bbox) != 4:
+                        return False
+                    min_lon, min_lat, max_lon, max_lat = bbox
+                    ng_min_lon, ng_min_lat, ng_max_lon, ng_max_lat = nigeria_bbox
+
+                    # check if bbox is inside Nigeria bbox
+                    return (
+                        min_lon >= ng_min_lon and
+                        min_lat >= ng_min_lat and
+                        max_lon <= ng_max_lon and
+                        max_lat <= ng_max_lat
+                    )
+            
+                def is_nigeria_feature(feature):
+                    props = feature.get('properties', {})
+                    address = props.get('address', {})
+                    country_code = address.get('countryRegion', {}).get('name', '').lower()
+                    return country_code in {"nga", "ng", "nigeria"}
+                
+                nigeria_features = [f for f in features if is_nigeria_feature(f)]
+                if not nigeria_features:
+                    nigeria_features = [f for f in features if bbox_inside_nigeria(f.get("bbox"))]
+                
+                if nigeria_features and nigeria_features[0].get('bbox', None):
+                    bbox = nigeria_features[0]['bbox']
+                    min_lon, min_lat, max_lon, max_lat = bbox
+                    return {
+                        "name": nigeria_features[0].get('properties', {}).get('address', {}).get('formattedAddress', location),
+                        "bbox": [min_lon, min_lat, max_lon, max_lat],
+                    }
         
-        except Exception as e:
+        except HttpResponseError as e:
             logger.error(f"Azure Maps geocoding error for '{location}': {e}")
         
         logger.info(f"Azure Maps returned no results for '{location}'")
