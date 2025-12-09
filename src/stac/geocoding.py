@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from typing import Optional, Dict, List
 
 from azure.core.credentials import AzureKeyCredential
-from azure.core.exceptions import HttpResponseError
 from azure.maps.search import MapsSearchClient
 from src.agents.agent_config import create_agent_client
 
@@ -140,7 +139,7 @@ class GeoCodingService:
                         "bbox": [min_lon, min_lat, max_lon, max_lat],
                     }
         
-        except HttpResponseError as e:
+        except Exception as e:
             logger.error(f"Azure Maps geocoding error for '{location}': {e}")
         
         logger.info(f"Azure Maps returned no results for '{location}'")
@@ -173,7 +172,16 @@ class GeoCodingService:
                 )
             
             result = await geocoding_agent.run()
-            parsed = json.loads(str(result))
+            result_str = str(result).strip()
+
+            # remove markdown code block if present
+            if result_str.startswith("```") and result_str.endswith("```"):
+                # remove ```json or ``` at start and ``` at end
+                result_str = result_str.split("```")[1]
+                if result_str.startswith("json"):
+                    result_str = result_str[4:].strip()
+                
+            parsed = json.loads(result_str)
             if "error" not in parsed and "bbox" in parsed:
                 return parsed
         except Exception as e:
