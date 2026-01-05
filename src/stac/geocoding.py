@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from src.utils.logging_config import setup_logging
 from dotenv import load_dotenv
 from typing import Optional, Dict, List
 
@@ -9,6 +10,7 @@ from azure.maps.search import MapsSearchClient
 from src.agents.agent_config import create_agent_client
 
 load_dotenv()
+setup_logging() 
 logger = logging.getLogger(__name__)
 
 # Local region definitions
@@ -152,7 +154,7 @@ class GeoCodingService:
         
         prompt = f"""
         Extract the bounding box for this location: '{location}'. If the location is in Nigeria, provide the bounding box. 
-        If it is ambiguous, assume it is in Nigeria. 
+        If it is ambiguous, don't assume anything and respond with None. 
         Return ONLY a JSON object in the following format: 
         {{
             "name": "<location_name>",
@@ -160,7 +162,7 @@ class GeoCodingService:
         }}
 
         Rules: 
-        - Bounding box should be reasonable (not too large, not too small)
+        - Bounding box should be reasonable and ONLY located in Nigeria(not too large, not too small)
         - Use [min_lon, min_lat, max_lon, max_lat] format
         - For cities, bbox should be ~0.1-0.3 degrees 
         - For states/regions, bbox should be ~1-3 degrees
@@ -173,17 +175,18 @@ class GeoCodingService:
             
             result = await geocoding_agent.run()
             result_str = str(result).strip()
-
+            
             # remove markdown code block if present
             if result_str.startswith("```") and result_str.endswith("```"):
                 # remove ```json or ``` at start and ``` at end
                 result_str = result_str.split("```")[1]
                 if result_str.startswith("json"):
                     result_str = result_str[4:].strip()
-                
+            
             parsed = json.loads(result_str)
             if "error" not in parsed and "bbox" in parsed:
                 return parsed
+            
         except Exception as e:
             logger.error(f"LLM geocoding error for '{location}': {e}")
         
