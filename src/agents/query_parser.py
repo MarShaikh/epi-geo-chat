@@ -4,12 +4,14 @@ import json
 from pydantic import BaseModel
 from src.agents.agent_config import create_agent_client
 
+
 class ParsedQuery(BaseModel):
-    intent: str # "data_search", "metadata_query", "analysis", "chat"
+    intent: str  # "data_search", "metadata_query", "analysis", "chat"
     collections: List[str]
     location: Optional[str] = None
     datetime: Optional[str] = None
     additional_params: Optional[dict] = {}
+
 
 def create_query_parser_agent():
     """
