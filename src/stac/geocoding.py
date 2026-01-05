@@ -183,6 +183,7 @@ class GeoCodingService:
                 if result_str.startswith("json"):
                     result_str = result_str[4:].strip()
             
+            result_str = result_str.replace(": None", ": null")
             parsed = json.loads(result_str)
             if "error" not in parsed and "bbox" in parsed:
                 return parsed
