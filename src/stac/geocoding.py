@@ -3,7 +3,8 @@ import json
 import logging
 from src.utils.logging_config import setup_logging
 from dotenv import load_dotenv
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Annotated
+from pydantic import Field
 
 from azure.core.credentials import AzureKeyCredential
 from azure.maps.search import MapsSearchClient
@@ -49,7 +50,7 @@ class GeoCodingService:
         )
         self.agent_client = create_agent_client()
 
-    async def geocode(self, location: str) -> Optional[Dict]:
+    async def geocode(self, location: Annotated[str, Field(description="Location name to geocode")]) -> Dict:
         """
         Geocode a location using multiple strategies using fallback chain:
         1. Local region lookup
