@@ -50,7 +50,9 @@ class GeoCodingService:
         )
         self.agent_client = create_agent_client()
 
-    async def geocode(self, location: Annotated[str, Field(description="Location name to geocode")]) -> Dict:
+    async def geocode(
+        self, location: Annotated[str, Field(description="Location name to geocode")]
+    ) -> Dict:
         """
         Geocode a location using multiple strategies using fallback chain:
         1. Local region lookup
