@@ -43,3 +43,7 @@ async def main(string: str = "Write a haiku about the Microsoft Agent Framework.
 asyncio.run(main(string = "Write a haiku about the ISS"))
 ```
 > **Note**: The responses API is not available in every region. Check [here](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/how-to/responses?view=foundry-classic&tabs=python-key#region-availability) to make sure that the responses API is available in the region where you have set up your Azure OpenAI account.  
+
+
+### Sequential Workflow Orchestration
+In sequential orchestration, agents are organised in a pipeline. Each agent processes a task and in turn, passes the output of this task to the agent after it. This is ideal for workflows where multiple agents do smaller tasks derived from one main task. For our usecase, sequential workflow orchestration is useful because we have four agents each processing different sections of the query. For more information, please check the official documentation on [sequential workflow orchestration](https://learn.microsoft.com/en-us/agent-framework/user-guide/workflows/orchestrations/sequential?pivots=programming-language-python) for more information. 
