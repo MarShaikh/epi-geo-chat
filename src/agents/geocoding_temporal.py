@@ -6,17 +6,17 @@ from src.stac.geocoding import GeoCodingService
 
 class GeocodingResult(BaseModel):
     """Structured output for geocoding and temporal resolution."""
+
     bbox: Optional[List[float]] = Field(
-        default=None,
-        description="Bounding box [min_lon, min_lat, max_lon, max_lat]"
+        default=None, description="Bounding box [min_lon, min_lat, max_lon, max_lat]"
     )
     datetime: Optional[str] = Field(
         default=None,
-        description="ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)"
+        description="ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)",
     )
     location_source: Optional[str] = Field(
         default=None,
-        description="Source of geocoding result: local, azure_maps, or llm"
+        description="Source of geocoding result: local, azure_maps, or llm",
     )
 
 

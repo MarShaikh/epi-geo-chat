@@ -5,6 +5,7 @@ from src.agents.agent_config import create_agent_client
 
 class ParsedQuery(BaseModel):
     """Structured output for parsed user queries."""
+
     intent: str = Field(
         description="Type of query: data_search, metadata_query, analysis, or chat"
     )
@@ -12,16 +13,14 @@ class ParsedQuery(BaseModel):
         description="List of STAC collection IDs mentioned in the query"
     )
     location: Optional[str] = Field(
-        default=None,
-        description="Location name or coordinates mentioned in query"
+        default=None, description="Location name or coordinates mentioned in query"
     )
     datetime: Optional[str] = Field(
         default=None,
-        description="Temporal reference from query (date, range, or relative time)"
+        description="Temporal reference from query (date, range, or relative time)",
     )
     additional_params: dict = Field(
-        default_factory=dict,
-        description="Any additional parameters or context"
+        default_factory=dict, description="Any additional parameters or context"
     )
 
 

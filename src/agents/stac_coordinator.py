@@ -6,13 +6,17 @@ from src.stac.catalog_client import GeoCatalogClient
 
 class STACItem(BaseModel):
     """Individual STAC item summary."""
+
     id: str = Field(description="Unique identifier for the STAC item")
     datetime: str = Field(description="Datetime of the observation")
-    assets: List[str] = Field(description="List of available asset keys (e.g., 'COG', 'metadata')")
+    assets: List[str] = Field(
+        description="List of available asset keys (e.g., 'COG', 'metadata')"
+    )
 
 
 class STACSearchResult(BaseModel):
     """Structured output for STAC search results."""
+
     count: int = Field(description="Total number of items found")
     collections: List[str] = Field(description="Collections that were searched")
     date_range: str = Field(description="Date range covered by the results")
@@ -21,7 +25,7 @@ class STACSearchResult(BaseModel):
     )
     bbox_searched: Optional[List[float]] = Field(
         default=None,
-        description="Bounding box that was searched [min_lon, min_lat, max_lon, max_lat]"
+        description="Bounding box that was searched [min_lon, min_lat, max_lon, max_lat]",
     )
 
 
@@ -64,6 +68,6 @@ def create_stac_coordinator_agent():
     catalog_agent = agent_client.create_agent(
         name="STACCoordinatorAgent",
         instructions=instructions,
-        tools=catalog_client.search
+        tools=catalog_client.search,
     )
     return catalog_agent
