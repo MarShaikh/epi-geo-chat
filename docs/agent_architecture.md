@@ -2,17 +2,17 @@
 
   ## Overview
   Our system uses 4 specialized agents orchestrated by Microsoft Agent Framework.
-  Inspired by Earth Copilot's 13-agent system, simplified for MVP with graph-based workflows.
+  Inspired by Earth Copilot's 13-agent system, simplified for MVP using Sequential Orchestration.
 
-  ## Agent Pipeline
+  ## Sequential Workflow Pattern
 
   User Query → Agent 1 → Agent 2 → Agent 3 → Agent 4 → Response
 
+  Built with: `SequentialBuilder().participants([agent1, agent2, agent3, agent4]).build()`
+
   ### Agent 1: Query Parser
   **Input:** Raw user query
-
   **Output:** Structured parameters
-
   **Responsibilities:**
   - Classify intent (data_search, metadata_query, analysis, chat)
   - Extract collection names (CHIRPS, MODIS, etc.)
@@ -21,9 +21,7 @@
 
   ### Agent 2: Geocoding & Temporal Resolution
   **Input:** Parsed parameters from Agent 1
-
   **Output:** Resolved bbox and datetime
-
   **Responsibilities:**
   - Convert location names to bounding boxes (multi-strategy)
   - Convert relative dates to ISO 8601 ("last month" → "2024-10-01/2024-10-31")
@@ -31,9 +29,7 @@
 
   ### Agent 3: STAC Query Coordinator
   **Input:** Resolved parameters (bbox, datetime, collections)
-
   **Output:** STAC search results
-
   **Responsibilities:**
   - Execute STAC API search
   - Apply filters (cloud cover, quality, etc.)
@@ -42,9 +38,7 @@
 
   ### Agent 4: Response Synthesizer
   **Input:** STAC results + original query
-
   **Output:** Human-readable response
-
   **Responsibilities:**
   - Generate natural language summary
   - Include key metadata (date ranges, item counts, coverage)
