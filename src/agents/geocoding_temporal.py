@@ -1,34 +1,54 @@
+from typing import Optional, List
+from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 from src.stac.geocoding import GeoCodingService
 
 
+class GeocodingResult(BaseModel):
+    """Structured output for geocoding and temporal resolution."""
+    bbox: Optional[List[float]] = Field(
+        default=None,
+        description="Bounding box [min_lon, min_lat, max_lon, max_lat]"
+    )
+    datetime: Optional[str] = Field(
+        default=None,
+        description="ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)"
+    )
+    location_source: Optional[str] = Field(
+        default=None,
+        description="Source of geocoding result: local, azure_maps, or llm"
+    )
+
+
 def create_geocoding_agent():
     """
-    Agent 2: Resolve location and temporal references
+    Agent 2: Resolve location and temporal references.
 
-    This agent uses a helper function for actual geocoding, but the temporal resolution is handled by the LLM.
+    Uses geocoder.geocode() as a function tool for location resolution.
+    The LLM handles temporal resolution.
+    Returns structured output using GeocodingResult Pydantic model.
     """
 
     instructions = """
     You are a geocoding and temporal resolution agent for geospatial data queries.
 
     Your tasks are:
-    1. Take location names and convert them into bounding boxes.
-    2. Convert relative time references to ISO 8601 format.
+    1. Take location names and convert them into bounding boxes using the geocode() function tool
+    2. Convert relative time references to ISO 8601 format
 
-    For location, you will be provided with geocoding results.
+    For locations:
+    - Call the geocode() function tool with the location name
+    - The tool will return bbox and source information
+    - Use the returned bbox in your response
+
     For temporal references, convert:
     - "last month" -> calculate last month's date range (YYYY-MM-DD/YYYY-MM-DD)
     - "yesterday" -> calculate yesterday's date (YYYY-MM-DD)
     - "last week" or "last 7 days" -> calculate last 7 days date range (YYYY-MM-DD/YYYY-MM-DD)
     - "2024" -> "2024-01-01/2024-12-31"
-    - If already in ISO format, return as is. 
+    - If already in ISO format, return as is
 
-    Return in JSON format: 
-    {
-        "bbox": [min_lon, min_lat, max_lon, max_lat] or null,
-        "datetime": "YYYY-MM-DD/YYYY-MM-DD" or "YYYY-MM-DD"
-    }
+    Return the bbox, datetime, and location_source in the structured format.
     """
     geocoder = GeoCodingService()
     agent_client = create_agent_client()

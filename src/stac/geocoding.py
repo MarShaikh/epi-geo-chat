@@ -52,7 +52,7 @@ class GeoCodingService:
 
     async def geocode(
         self, location: Annotated[str, Field(description="Location name to geocode")]
-    ) -> Dict:
+    ) -> Optional[Dict]:
         """
         Geocode a location using multiple strategies using fallback chain:
         1. Local region lookup
