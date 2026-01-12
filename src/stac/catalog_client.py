@@ -1,6 +1,6 @@
 import os
 import requests
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Any
 
 import pystac
 from azure.identity import DefaultAzureCredential
@@ -43,14 +43,31 @@ class GeoCatalogClient:
         datetime: Optional[str] = None,
         collections: Optional[List[str]] = None,
         limit: int = 10,
+        use_intersects: bool = False,
     ) -> Dict:
         """Search for items in the catalog based on spatial and temporal parameters."""
         url = f"{self.catalog_url}/stac/search"
-        params = {"api-version": "2025-04-03-preview", "sign": "true"}
+        params = {"api-version": "2025-04-30-preview", "sign": "true"}
 
-        body: Dict[str, Union[int, str, List[float], List[str]]] = {"limit": limit}
+        body: Dict[str, Any] = {"limit": limit}
         if bbox:
-            body["bbox"] = bbox
+            if use_intersects:
+              # Convert bbox to GeoJSON Polygon for explicit intersection
+              # bbox format: [min_lon, min_lat, max_lon, max_lat]
+              min_lon, min_lat, max_lon, max_lat = bbox
+              body["intersects"] = {
+                  "type": "Polygon",
+                  "coordinates": [[
+                      [min_lon, min_lat],
+                      [max_lon, min_lat],
+                      [max_lon, max_lat],
+                      [min_lon, max_lat],
+                      [min_lon, min_lat]  # Close the polygon
+                  ]]
+              }
+            else:
+              body["bbox"] = bbox
+              
         if datetime:
             body["datetime"] = datetime
         if collections:
