@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Any, Optional, List, Dict
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 
@@ -19,8 +19,8 @@ class ParsedQuery(BaseModel):
         default=None,
         description="Temporal reference from query (date, range, or relative time)",
     )
-    additional_params: dict = Field(
-        default_factory=dict, description="Any additional parameters or context"
+    additional_params: Optional[str] = Field(
+        default=None, description="Any additional parameters or context"
     )
 
 
