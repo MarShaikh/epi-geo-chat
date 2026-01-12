@@ -1,5 +1,6 @@
 from src.agents.agent_config import create_agent_client
 
+
 def create_response_synthesizer_agent():
     """
     Agent 4: Generate human-readable responses from STAC results.
@@ -36,4 +37,3 @@ def create_response_synthesizer_agent():
         name="Response Synthesizer Agent",
         instructions=instructions,
     )
-    
