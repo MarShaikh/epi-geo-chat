@@ -116,7 +116,7 @@ async def process_query(user_query: str) -> WorkflowResult:
     print(f"Found {stac_search_result.count} items.")
     print(f"Date ranges: {stac_search_result.date_range}")
     print(f"Collections searched: {stac_search_result.collections}")
-    
+
     items = [item.id for item in stac_search_result.items]
     print(f"Items (up to 10): {items[:10]}")
 

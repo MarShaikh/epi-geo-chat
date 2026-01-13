@@ -52,22 +52,24 @@ class GeoCatalogClient:
         body: Dict[str, Any] = {"limit": limit}
         if bbox:
             if use_intersects:
-              # Convert bbox to GeoJSON Polygon for explicit intersection
-              # bbox format: [min_lon, min_lat, max_lon, max_lat]
-              min_lon, min_lat, max_lon, max_lat = bbox
-              body["intersects"] = {
-                  "type": "Polygon",
-                  "coordinates": [[
-                      [min_lon, min_lat],
-                      [max_lon, min_lat],
-                      [max_lon, max_lat],
-                      [min_lon, max_lat],
-                      [min_lon, min_lat]  # Close the polygon
-                  ]]
-              }
+                # Convert bbox to GeoJSON Polygon for explicit intersection
+                # bbox format: [min_lon, min_lat, max_lon, max_lat]
+                min_lon, min_lat, max_lon, max_lat = bbox
+                body["intersects"] = {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [min_lon, min_lat],
+                            [max_lon, min_lat],
+                            [max_lon, max_lat],
+                            [min_lon, max_lat],
+                            [min_lon, min_lat],  # Close the polygon
+                        ]
+                    ],
+                }
             else:
-              body["bbox"] = bbox
-              
+                body["bbox"] = bbox
+
         if datetime:
             body["datetime"] = datetime
         if collections:

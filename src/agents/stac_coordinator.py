@@ -28,6 +28,7 @@ class STACSearchResult(BaseModel):
         description="Bounding box that was searched [min_lon, min_lat, max_lon, max_lat]",
     )
 
+
 def search_and_summarize(
     collections: List[str],
     bbox: Optional[List[float]] = None,
@@ -39,7 +40,7 @@ def search_and_summarize(
 
     This function processes STAC results deterministically in Python,
     avoiding the need to send 61K tokens of raw JSON to the LLM.
-    
+
     The agent receives only a concise summary (~1K tokens).
     Args:
         collections: List of STAC collection IDs to search
@@ -51,7 +52,7 @@ def search_and_summarize(
     """
 
     catalog_client = GeoCatalogClient()
-    
+
     # perform the search
     search_results = catalog_client.search(
         bbox=bbox,
@@ -70,7 +71,7 @@ def search_and_summarize(
             "items": [],
             "bbox_searched": bbox if bbox else "Unspecified",
         }
-    
+
     # extract datetimes from items
     dates = []
     for item in items:
@@ -78,13 +79,13 @@ def search_and_summarize(
             dt = item["properties"]["datetime"]
             if dt:
                 dates.append(dt)
-    
+
     # determine date range
     if dates:
         dates_sorted = sorted(dates)
         date_range = f"{dates_sorted[0]} to {dates_sorted[-1]}"
-    
-    else: 
+
+    else:
         date_range = "Unspecified"
 
     # get sample item IDs (limit to first 10)
@@ -98,7 +99,6 @@ def search_and_summarize(
         "bbox_searched": bbox if bbox else "Unspecified",
     }
 
-    
 
 def create_stac_coordinator_agent():
     """

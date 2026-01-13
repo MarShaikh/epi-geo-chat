@@ -9,8 +9,8 @@ class ParsedQuery(BaseModel):
     intent: str = Field(
         description="Type of query: data_search, metadata_query, analysis, or chat"
     )
-    collections: List[str] = Field(
-        description="List of STAC collection IDs mentioned in the query"
+    data_type_keywords: List[str] = Field(
+        description="List of keywords mentioned in the query"
     )
     location: Optional[str] = Field(
         default=None, description="Location name or coordinates mentioned in query"
@@ -42,11 +42,8 @@ def create_query_parser_agent():
        - analysis: User wants analysis or visualization of data
        - chat: General question or discussion about geospatial topics
 
-    2. Collections: Which datasets/collections are mentioned?
-       - "rainfall", "precipitation", "CHIRPS" -> Nigeria-CHIRPS
-       - "temperature", "LST", "land surface temperature" -> modis-11A1-061-nigeria-557
-       - "vegetation", "NDVI", "EVI", "NDVI/EVI" -> modis-13Q1-061-nigeria-344
-       - "MODIS" -> modis-*
+    2. Data type keywords: What types of data is the user interested in?
+         - Extract keywords like "rainfall", "temperature", "vegetation", "MODIS", "Landsat", "thermal data", "surface heat",  etc. and add to a list. 
 
     3. Location: Where is the user asking about?
        - Extract region/city names ("Lagos", "Nigeria", "Abuja", etc.)
