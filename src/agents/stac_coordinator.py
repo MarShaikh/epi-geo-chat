@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 from src.stac.catalog_client import GeoCatalogClient
@@ -28,6 +28,77 @@ class STACSearchResult(BaseModel):
         description="Bounding box that was searched [min_lon, min_lat, max_lon, max_lat]",
     )
 
+def search_and_summarize(
+    collections: List[str],
+    bbox: Optional[List[float]] = None,
+    datetime: Optional[str] = None,
+    limit: Optional[int] = 10,
+) -> Dict:
+    """
+    Perform STAC seach and return structured summary of results for the agent.
+
+    This function processes STAC results deterministically in Python,
+    avoiding the need to send 61K tokens of raw JSON to the LLM.
+    
+    The agent receives only a concise summary (~1K tokens).
+    Args:
+        collections: List of STAC collection IDs to search
+        bbox: Bounding box [min_lon, min_lat, max_lon, max_lat]
+        datetime: ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)
+        limit: Maximum number of items to retrieve (default 100)
+    Returns:
+        dict: Summarized results with count, date range, and sample item IDs
+    """
+
+    catalog_client = GeoCatalogClient()
+    
+    # perform the search
+    search_results = catalog_client.search(
+        bbox=bbox,
+        datetime=datetime,
+        collections=collections,
+        limit=limit,
+    )
+
+    items = search_results.get("features", [])
+
+    if not items:
+        return {
+            "count": 0,
+            "collections": collections,
+            "date_range": datetime if datetime else "Unspecified",
+            "items": [],
+            "bbox_searched": bbox if bbox else "Unspecified",
+        }
+    
+    # extract datetimes from items
+    dates = []
+    for item in items:
+        if "properties" in item and "datetime" in item["properties"]:
+            dt = item["properties"]["datetime"]
+            if dt:
+                dates.append(dt)
+    
+    # determine date range
+    if dates:
+        dates_sorted = sorted(dates)
+        date_range = f"{dates_sorted[0]} to {dates_sorted[-1]}"
+    
+    else: 
+        date_range = "Unspecified"
+
+    # get sample item IDs (limit to first 10)
+    sample_items = [item["id"] for item in items[:10]]
+
+    return {
+        "count": len(items),
+        "collections": collections,
+        "date_range": date_range,
+        "items": sample_items,
+        "bbox_searched": bbox if bbox else "Unspecified",
+    }
+
+    
 
 def create_stac_coordinator_agent():
     """
@@ -63,11 +134,10 @@ def create_stac_coordinator_agent():
     - Bounding box that was searched
     """
 
-    catalog_client = GeoCatalogClient()
     agent_client = create_agent_client()
     catalog_agent = agent_client.create_agent(
         name="STACCoordinatorAgent",
         instructions=instructions,
-        tools=catalog_client.search,
+        tools=search_and_summarize,
     )
     return catalog_agent
