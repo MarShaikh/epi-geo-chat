@@ -42,10 +42,11 @@ def create_geocoding_agent():
     - Use the returned bbox in your response
 
     For temporal references, convert:
-    - "last month" -> calculate last month's date range (YYYY-MM-DD/YYYY-MM-DD)
-    - "yesterday" -> calculate yesterday's date (YYYY-MM-DD)
-    - "last week" or "last 7 days" -> calculate last 7 days date range (YYYY-MM-DD/YYYY-MM-DD)
+    - "last month" -> calculate last month's date range (YYYY-MM-DD/YYYY-MM-DD) relative to {current_date}
+    - "yesterday" -> calculate yesterday's date (YYYY-MM-DD) relative to {current_date}
+    - "last week" or "last 7 days" -> calculate last 7 days date range (YYYY-MM-DD/YYYY-MM-DD) relative to {current_date}
     - "2024" -> "2024-01-01/2024-12-31"
+    - "March 2023" -> "2023-03-01/2023-03-31"
     - If already in ISO format, return as is
 
     Return the bbox, datetime, and location_source in the structured format.
