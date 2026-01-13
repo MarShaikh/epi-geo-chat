@@ -44,7 +44,7 @@ def create_query_parser_agent():
 
     2. Collections: Which datasets/collections are mentioned?
        - "rainfall", "precipitation", "CHIRPS" -> Nigeria-CHIRPS
-       - "temperature", "LST", "land surface temperature" -> modis-11A1-061-nigeria
+       - "temperature", "LST", "land surface temperature" -> modis-11A1-061-nigeria-557
        - "vegetation", "NDVI", "EVI", "NDVI/EVI" -> modis-13Q1-061-nigeria-344
        - "MODIS" -> modis-*
 
