@@ -42,7 +42,7 @@ class GeoCatalogClient:
         bbox: Optional[List[float]] = None,
         datetime: Optional[str] = None,
         collections: Optional[List[str]] = None,
-        limit: int = 10,
+        limit: Optional[int] = 10,
         use_intersects: bool = False,
     ) -> Dict:
         """Search for items in the catalog based on spatial and temporal parameters."""
