@@ -116,7 +116,9 @@ async def process_query(user_query: str) -> WorkflowResult:
     print(f"Found {stac_search_result.count} items.")
     print(f"Date ranges: {stac_search_result.date_range}")
     print(f"Collections searched: {stac_search_result.collections}")
-    print(f"Items (up to 10): {[item.id for item in stac_search_result.items]}")
+    
+    items = [item.id for item in stac_search_result.items]
+    print(f"Items (up to 10): {items[:10]}")
 
     # 4. Agent 4: Synthesize Response
     print(f"\n[Agent 4] Synthesizing final response...")
@@ -129,7 +131,7 @@ async def process_query(user_query: str) -> WorkflowResult:
     - Found {stac_search_result.count} items
     - Date Range: {stac_search_result.date_range} 
     - Collections: {stac_search_result.collections}
-    - Sample Items: {[item.id for item in stac_search_result.items]}
+    - Sample Items: {items[:10]}
 
     Generate Helpful response to user query based on the search results.
     """
