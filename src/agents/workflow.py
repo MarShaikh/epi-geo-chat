@@ -64,9 +64,9 @@ async def process_query(user_query: str) -> WorkflowResult:
         parsed_query, ParsedQuery
     ), "Expected ParsedQuery from query parser"
 
-    print(f" Intent: {parsed_query.intent}")
-    print(f" Keywords from user query: {parsed_query.data_type_keywords}")
-    print(f" Location: {parsed_query.location}")
+    print(f"Intent: {parsed_query.intent}")
+    print(f"Keywords from user query: {parsed_query.data_type_keywords}")
+    print(f"Location: {parsed_query.location}")
     print(f"Datetime: {parsed_query.datetime}")
 
     # resolve location using RAG
