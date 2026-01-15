@@ -1,8 +1,10 @@
-import chromadb
-from chromadb.config import Settings
-from pathlib import Path
-import json
+import os
 from typing import List
+from dotenv import load_dotenv
+
+import chromadb
+
+load_dotenv()
 
 
 class CollectionVectorStore:
@@ -11,12 +13,15 @@ class CollectionVectorStore:
     Used for semantic collection selection based on user keywords.
     """
 
-    def __init__(self, persist_directory: str = "./data/chroma"):
+    def __init__(self):
 
-        self.chroma_client = chromadb.PersistentClient(
-            path=persist_directory, settings=Settings(anonymized_telemetry=False)
-        )
-
+        self.chroma_client = chromadb.HttpClient(host=os.environ["CHROMA_CLIENT_URL"], ssl=True)
+        
+        try:
+            self.chroma_client.heartbeat()
+        except Exception as e:
+            raise ConnectionError(f"Failed to connect to ChromaDB at {os.environ['CHROMA_CLIENT_URL']}: {e}")
+        
         self.collection = self.chroma_client.get_or_create_collection(
             name="stac_collections",
             metadata={"description": "STAC collection metadata for semantic search."},
