@@ -2,6 +2,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 from src.stac.geocoding import GeoCodingService
+from datetime import datetime
 
 
 class GeocodingResult(BaseModel):
@@ -28,8 +29,11 @@ def create_geocoding_agent():
     The LLM handles temporal resolution.
     Returns structured output using GeocodingResult Pydantic model.
     """
+    
+    # Get the current date for relative time calculations
+    current_date = datetime.today().strftime('%Y-%m-%d')
 
-    instructions = """
+    instructions = f"""
     You are a geocoding and temporal resolution agent for geospatial data queries.
 
     Your tasks are:
