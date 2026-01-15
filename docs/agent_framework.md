@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 from agent_framework.azure import AzureOpenAIResponsesClient
 from azure.identity import AzureCliCredential
 
-load_dotenv() # save the env vars in a `.env` file
+load_dotenv() # load the env vars from a `.env` file
 
 async def main(string: str = "Write a haiku about the Microsoft Agent Framework."):
     agent = AzureOpenAIResponsesClient(
