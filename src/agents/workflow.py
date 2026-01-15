@@ -7,6 +7,7 @@ from src.agents.query_parser import create_query_parser_agent, ParsedQuery
 from src.agents.geocoding_temporal import create_geocoding_agent, GeocodingResult
 from src.agents.stac_coordinator import create_stac_coordinator_agent, STACSearchResult
 from src.agents.response_synthesizer import create_response_synthesizer_agent
+from src.rag.collection_resolver import resolve_collections_by_keywords
 
 
 class WorkflowResult:
@@ -64,9 +65,17 @@ async def process_query(user_query: str) -> WorkflowResult:
     ), "Expected ParsedQuery from query parser"
 
     print(f" Intent: {parsed_query.intent}")
-    print(f"Collections: {parsed_query.collections}")
+    print(f" Keywords from user query: {parsed_query.data_type_keywords}")
     print(f" Location: {parsed_query.location}")
     print(f"Datetime: {parsed_query.datetime}")
+
+    # resolve location using RAG
+    collections = resolve_collections_by_keywords(
+        data_type_keywords=parsed_query.data_type_keywords,
+        limit=3,
+    )
+
+    print(f"RAG Resolved Collections: {collections}")
 
     # 2. Agent 2: Geocoding and Temporal Interpretation
     print(f"\n[Agent 2] Resolving location and datetime...")
@@ -99,7 +108,7 @@ async def process_query(user_query: str) -> WorkflowResult:
 
     stac_prompt = f"""
     Search the STAC catalogs for the following: 
-    - Collections: {parsed_query.collections}
+    - Collections: {collections[0]}
     - BBox: {geocoding_result.bbox}
     - Datetime: {geocoding_result.datetime}
 
