@@ -15,13 +15,17 @@ class CollectionVectorStore:
 
     def __init__(self):
 
-        self.chroma_client = chromadb.HttpClient(host=os.environ["CHROMA_CLIENT_URL"], ssl=True)
-        
+        self.chroma_client = chromadb.HttpClient(
+            host=os.environ["CHROMA_CLIENT_URL"], ssl=True
+        )
+
         try:
             self.chroma_client.heartbeat()
         except Exception as e:
-            raise ConnectionError(f"Failed to connect to ChromaDB at {os.environ['CHROMA_CLIENT_URL']}: {e}")
-        
+            raise ConnectionError(
+                f"Failed to connect to ChromaDB at {os.environ['CHROMA_CLIENT_URL']}: {e}"
+            )
+
         self.collection = self.chroma_client.get_or_create_collection(
             name="stac_collections",
             metadata={"description": "STAC collection metadata for semantic search."},

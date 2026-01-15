@@ -30,10 +30,23 @@ class STACSearchResult(BaseModel):
 
 
 def search_and_summarize(
-    collections: Annotated[List[str], Field(description="List of STAC collection IDs to search")],
-    bbox: Annotated[Optional[List[float]], Field(description="Bounding box [min_lon, min_lat, max_lon, max_lat]")] = None,
-    datetime: Annotated[Optional[str], Field(description="ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)")] = None,
-    limit: Annotated[Optional[int], Field(description="Maximum number of items to retrieve (default 100)")] = 10,
+    collections: Annotated[
+        List[str], Field(description="List of STAC collection IDs to search")
+    ],
+    bbox: Annotated[
+        Optional[List[float]],
+        Field(description="Bounding box [min_lon, min_lat, max_lon, max_lat]"),
+    ] = None,
+    datetime: Annotated[
+        Optional[str],
+        Field(
+            description="ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)"
+        ),
+    ] = None,
+    limit: Annotated[
+        Optional[int],
+        Field(description="Maximum number of items to retrieve (default 100)"),
+    ] = 10,
 ) -> Dict:
     """
     Perform STAC seach and return structured summary of results for the agent.
