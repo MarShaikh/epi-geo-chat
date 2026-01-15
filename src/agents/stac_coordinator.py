@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Annotated
+from typing import Dict, List, Optional, Annotated, Any
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 from src.stac.catalog_client import GeoCatalogClient
@@ -27,6 +27,68 @@ class STACSearchResult(BaseModel):
         default=None,
         description="Bounding box that was searched [min_lon, min_lat, max_lon, max_lat]",
     )
+
+def list_collections() -> Dict:
+    """
+    List all available STAC collections from the catalog.
+
+    Use this when the user asks:
+    - "What collections are available?"
+    - "List all the available datasets."
+    - "Show me all the data sources."
+
+    Returns:
+        Dict: Collection count a list of collection IDs with titles and descriptions.
+    """
+    print("Listing all STAC collections...")
+    catalog_client = GeoCatalogClient()
+    response = catalog_client.list_collections()
+
+    collections = []
+    for coll in response.get("collections", []):
+        collections.append({
+            "id": coll['id'],
+            "title": coll.get('title', ''),
+            "description": coll.get('description', ''),
+        })
+    
+    return {
+        "count": len(collections),
+        "collections": collections
+    }
+
+def get_collection_details(collection_id: Annotated[str, Field(description="STAC collection ID")]) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific STAC collection.
+      
+    Use this when the user asks about a specific data type:
+    - "What do you know about vegetation data?" 
+    - "Tell me about the temperature collections"
+    - "Give me details on modis-11A1-061-nigeria-557"
+    
+    Args:
+        collection_id: The STAC collection ID to get details for
+    
+    Returns:
+        Detailed collection metadata including description, extent, keywords, license.
+    """
+    print(f"Fetching details for collection ID: {collection_id}")
+    catalog_client = GeoCatalogClient()
+    
+    try: 
+        coll_info = catalog_client.get_collection(collection_id)
+        return {
+            "description": coll_info.get("description", ""),
+            "keywords": coll_info.get("keywords", []),
+            "extent": coll_info.get("extent", ""),
+            "license": coll_info.get("license", []),
+            "providers": coll_info.get("providers", []),
+        }
+    except Exception as e:
+        return {
+            "id": collection_id,
+            "error": str(e)
+        }
 
 
 def search_and_summarize(
@@ -117,40 +179,42 @@ def create_stac_coordinator_agent():
     """
     Agent 3: Execute STAC catalog searches and optimize results.
 
-    Uses catalog_client.search() as a function tool.
-    Returns structured output using STACSearchResult Pydantic model with nested STACItem objects.
+    Handles both data search AND metadata queries using the appropriate function tool. 
+
+    Tools available: 
+    - list_collection_names(): To list all available STAC collections
+    - get_collection_details(collection_id): To get details about a specific collection
+    - search_and_summarize():  To perform STAC searches and summarize results
+
+    Returns: 
+        Structured output using STACSearchResult Pydantic model with nested STACItem objects.
     """
 
     instructions = """
-    You are a STAC (SpatioTemporal Asset Catalog) coordinator agent for geospatial data queries.
+    You are a STAC (SpatioTemporal Asset Catalog) coordinator agent.
+    
+    Your responsibilities:
+    1. **For data search queries** (user wants actual data items):
+       - Use search_and_summarize(collections, bbox, datetime) to find items
+       - Return structured results with count, date range, and sample item IDs
+    2. **For metadata queries** (user asks what's available):
+       a) "What collections do we have?" / "List all datasets"
+          - Use list_collections() to get all collections
+       b) "What do you know about [data type]?" / "Tell me about [collection]"
+          - Use get_collection_details(collection_id) for specific collection info
+          - You'll receive collection_id from the context
+       c) "What data is available for [location] in [time]?"
+          - Use search_and_summarize() with limit=1000 to get accurate counts
+    
+    Always use the appropriate function tool based on the user's question.
+    Return the results in a clear, structured format.
 
-    Your responsibilities include:
-    1. Take parsed query parameters (collections, bbox, datetime)
-    2. Execute STAC API searches using the search() function tool
-    3. Optimize and filter results
-    4. Return a structured summary of findings
-
-    When you receive search parameters:
-    - Call the search() function tool with the appropriate parameters
-    - Analyze the returned results
-    - Extract key information from each item:
-      - Item ID
-      - Datetime of observation
-      - Available assets (COG, metadata, etc.)
-    - Summarize the overall search results
-
-    Return a structured response with:
-    - Total count of items found
-    - Collections searched
-    - Date range covered
-    - Detailed list of items (limit to first 10 items for efficiency)
-    - Bounding box that was searched
     """
 
     agent_client = create_agent_client()
     catalog_agent = agent_client.create_agent(
         name="STACCoordinatorAgent",
         instructions=instructions,
-        tools=search_and_summarize,
+        tools=[search_and_summarize, list_collections, get_collection_details],
     )
     return catalog_agent
