@@ -93,8 +93,8 @@ def get_collection_details(collection_id: Annotated[str, Field(description="STAC
 
 def search_and_summarize(
     collections: Annotated[
-        List[str], Field(description="List of STAC collection IDs to search")
-    ],
+        Optional[List[str]], Field(description="List of STAC collection IDs to search")
+    ] = None,
     bbox: Annotated[
         Optional[List[float]],
         Field(description="Bounding box [min_lon, min_lat, max_lon, max_lat]"),
@@ -128,6 +128,11 @@ def search_and_summarize(
 
     catalog_client = GeoCatalogClient()
 
+    # if no collections specified, search all
+    if not collections:
+        all_collections_resp = catalog_client.list_collections()
+        collections = [coll["id"] for coll in all_collections_resp.get("collections", [])]
+    
     # perform the search
     search_results = catalog_client.search(
         bbox=bbox,

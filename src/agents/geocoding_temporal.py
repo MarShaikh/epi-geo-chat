@@ -40,10 +40,14 @@ def create_geocoding_agent():
     1. Take location names and convert them into bounding boxes using the geocode() function tool
     2. Convert relative time references to ISO 8601 format
 
-    For locations:
+    If location is provided:
     - Call the geocode() function tool with the location name
     - The tool will return bbox and source information
     - Use the returned bbox in your response
+
+    Otherwise, if location is None:
+    - Set bbox to None
+    - Set location_source to None
 
     For temporal references, convert:
     - "last month" -> calculate last month's date range (YYYY-MM-DD/YYYY-MM-DD) relative to {current_date}

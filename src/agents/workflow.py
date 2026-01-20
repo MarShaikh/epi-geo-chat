@@ -153,7 +153,8 @@ async def process_query(user_query: str) -> WorkflowResult:
             if collections:
                 stac_prompt += f"Count items in these collections: {collections}\n"
             else:
-                stac_prompt += "Count items across relevant collections.\n"
+                stac_prompt += "Count items across all collections.\n"
+            
             if geocoding_result.bbox:
                 stac_prompt += f"BBox: {geocoding_result.bbox}\n"
             if geocoding_result.datetime:
