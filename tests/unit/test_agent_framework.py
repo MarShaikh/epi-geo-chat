@@ -46,18 +46,18 @@ def test_agent_creation(mock_client_class, mock_env_vars):
     mock_client = MagicMock()
     mock_agent = MagicMock()
     mock_agent.name = "TestAgent"
-    mock_client.create_agent.return_value = mock_agent
+    mock_client.as_agent.return_value = mock_agent
     mock_client_class.return_value = mock_client
 
     env_with_key = {**mock_env_vars, "AZURE_OPENAI_API_KEY": "test-key"}
 
     with patch.dict("os.environ", env_with_key, clear=True):
         client = create_agent_client()
-        agent = client.create_agent(
+        agent = client.as_agent(
             name="TestAgent", instructions="You are a helpful assistant..."
         )
 
-        mock_client.create_agent.assert_called_once_with(
+        mock_client.as_agent.assert_called_once_with(
             name="TestAgent", instructions="You are a helpful assistant..."
         )
         assert agent.name == "TestAgent"
