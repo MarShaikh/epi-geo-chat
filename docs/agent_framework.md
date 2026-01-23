@@ -32,7 +32,7 @@ async def main(string: str = "Write a haiku about the Microsoft Agent Framework.
         # api_version = os.environ["AZURE_OPENAI_API_VERSION"],
         # api_key = os.environ.get("AZURE_OPENAI_API_KEY"),
         # credential=AzureCliCredential(); if not using the API key
-    ).create_agent( # use this to create an agent
+    ).as_agent( # use this to create an agent
         name = "HaikuBot",
         instruction = "You are a poet that composes beautiful haikus.",
     )
