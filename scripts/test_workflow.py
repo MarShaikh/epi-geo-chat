@@ -1,11 +1,6 @@
 """
 Test script for the structured output workflow.
 """
-
-import os
-
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
 import asyncio
 from src.agents.workflow import process_query
 from dotenv import load_dotenv
@@ -17,7 +12,7 @@ async def main():
     # Test queries
     test_queries = [
         # "Show me rainfall data for Lagos in February 2024",
-        "How much data is available for Kano from 21st March 2023 to 25th March 2023?", # this doesn't work 
+        # "How much data is available for Kano from 21st March 2023 to 25th March 2023?", # this doesn't work 
         # "What was the vegetation like in Ondo State in 2021?",
         "How many rainfall items do we have for January 2023?"
     ]
