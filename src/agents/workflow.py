@@ -165,7 +165,7 @@ async def process_query(user_query: str) -> WorkflowResult:
                 stac_prompt += f"BBox: {geocoding_result.bbox}\n"
             if geocoding_result.datetime:
                 stac_prompt += f"Datetime: {geocoding_result.datetime}\n"
-            stac_prompt += "Use search_and_summarize() with limit=100000 to get accurate counts."
+            stac_prompt += "Use search_and_summarize() with limit=1000 to get accurate counts."
         
         else:
             # Generic metadata query
