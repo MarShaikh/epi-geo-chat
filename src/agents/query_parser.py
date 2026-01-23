@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Annotated
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 
@@ -6,26 +6,26 @@ from src.agents.agent_config import create_agent_client
 class ParsedQuery(BaseModel):
     """Structured output for parsed user queries."""
 
-    intent: str = Field(
+    intent: Annotated[str, Field(
         description="Type of query: data_search, metadata_query, analysis, or chat"
-    )
-    metadata_sub_intent: Optional[str] = Field(
+    )]
+    metadata_sub_intent: Annotated[Optional[str], Field(
         default=None,
         description="For metadata_query intent, specify sub-intent: list_collections, collection_details or count_items",
-    )
-    data_type_keywords: List[str] = Field(
+    )]
+    data_type_keywords: Annotated[List[str], Field(
         description="List of keywords mentioned in the query"
-    )
-    location: Optional[str] = Field(
+    )]
+    location: Annotated[Optional[str], Field(
         default=None, description="Location name or coordinates mentioned in query"
-    )
-    datetime: Optional[str] = Field(
+    )]
+    datetime: Annotated[Optional[str], Field(
         default=None,
         description="Temporal reference from query (date, range, or relative time)",
-    )
-    additional_params: Optional[str] = Field(
+    )]
+    additional_params: Annotated[Optional[str], Field(
         default=None, description="Any additional parameters or context"
-    )
+    )]
 
 
 def create_query_parser_agent():
@@ -143,6 +143,6 @@ def create_query_parser_agent():
     agent_client = create_agent_client()
     query_parser_agent = agent_client.as_agent(
         name="QueryParserAgent",
-        instructions=instructions,
+        instructions=instructions
     )
     return query_parser_agent
