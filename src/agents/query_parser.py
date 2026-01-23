@@ -141,7 +141,7 @@ def create_query_parser_agent():
     """
 
     agent_client = create_agent_client()
-    query_parser_agent = agent_client.create_agent(
+    query_parser_agent = agent_client.as_agent(
         name="QueryParserAgent",
         instructions=instructions,
     )

@@ -33,7 +33,7 @@ def create_response_synthesizer_agent():
     Keep respnonses concise (2-3 sentences) but informative. 
     """
     agent_client = create_agent_client()
-    return agent_client.create_agent(
+    return agent_client.as_agent(
         name="Response Synthesizer Agent",
         instructions=instructions,
     )

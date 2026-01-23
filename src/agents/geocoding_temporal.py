@@ -61,7 +61,7 @@ def create_geocoding_agent():
     """
     geocoder = GeoCodingService()
     agent_client = create_agent_client()
-    geocoding_agent = agent_client.create_agent(
+    geocoding_agent = agent_client.as_agent(
         name="GeocodingTemporalAgent", instructions=instructions, tools=geocoder.geocode
     )
     return geocoding_agent

@@ -217,7 +217,7 @@ def create_stac_coordinator_agent():
     """
 
     agent_client = create_agent_client()
-    catalog_agent = agent_client.create_agent(
+    catalog_agent = agent_client.as_agent(
         name="STACCoordinatorAgent",
         instructions=instructions,
         tools=[search_and_summarize, list_collections, get_collection_details],
