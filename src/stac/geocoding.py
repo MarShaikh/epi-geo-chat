@@ -42,12 +42,7 @@ class GeoCodingService:
     """Multi-strategy geocoding service inspired by Earth Copilot's geocoding approach."""
 
     def __init__(self):
-        maps_key = os.environ.get("AZURE_MAPS_SUBSCRIPTION_KEY")
-        self.maps_client = (
-            MapsSearchClient(credential=AzureKeyCredential(maps_key))
-            if maps_key
-            else None
-        )
+        self.maps_key = os.environ.get("AZURE_MAPS_SUBSCRIPTION_KEY")
         self.agent_client = create_agent_client()
 
     async def geocode(
@@ -74,7 +69,7 @@ class GeoCodingService:
             return result
 
         # strategy 2: Azure Maps geocoding
-        if self.maps_client:
+        if self.maps_key:
             result = await self._azure_maps_geocode(location)
             if result:
                 logger.info(f"Geocoded '{location}' using Azure Maps.")
@@ -106,11 +101,18 @@ class GeoCodingService:
 
     async def _azure_maps_geocode(self, location: str) -> Optional[Dict]:
         """Use Azure Maps to geocode the location."""
+
+        maps_client = (
+            MapsSearchClient(credential=AzureKeyCredential(self.maps_key))
+            if self.maps_key
+            else None
+        )
+
         try:
             search_query = location
             result = (
-                self.maps_client.get_geocoding(query=search_query)
-                if self.maps_client
+                maps_client.get_geocoding(query=search_query)
+                if maps_client
                 else None
             )
 
@@ -184,7 +186,7 @@ class GeoCodingService:
         - For states/regions, bbox should be ~1-3 degrees
         """
         try:
-            geocoding_agent = self.agent_client.create_agent(
+            geocoding_agent = self.agent_client.as_agent(
                 name="GeoCodingLLM", instructions=prompt
             )
 
