@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Annotated, Dict
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 from src.stac.geocoding import GeoCodingService
@@ -8,17 +8,29 @@ from datetime import datetime
 class GeocodingResult(BaseModel):
     """Structured output for geocoding and temporal resolution."""
 
-    bbox: Optional[List[float]] = Field(
+    bbox: Annotated[Optional[List[float]], Field(
         default=None, description="Bounding box [min_lon, min_lat, max_lon, max_lat]"
-    )
-    datetime: Optional[str] = Field(
+    )]
+    datetime: Annotated[Optional[str], Field(
         default=None,
         description="ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)",
-    )
-    location_source: Optional[str] = Field(
+    )]
+    location_source: Annotated[Optional[str], Field(
         default=None,
         description="Source of geocoding result: local, azure_maps, or llm",
-    )
+    )]
+
+async def geocode(
+        location: Annotated[str, Field(description="Location name to geocode")]
+) -> Optional[Dict]:
+    """                                                                                                                                    
+    Geocode a location name to a bounding box.                                                                                             
+                                                                                                                                           
+    Returns:                                                                                                                               
+        Dict with name, bbox, and source fields, or None if geocoding fails.                                                               
+    """                                                                                                                                    
+    geocoder = GeoCodingService()                                                                                                          
+    return await geocoder.geocode(location)    
 
 
 def create_geocoding_agent():
@@ -59,9 +71,8 @@ def create_geocoding_agent():
 
     Return the bbox, datetime, and location_source in the structured format.
     """
-    geocoder = GeoCodingService()
     agent_client = create_agent_client()
     geocoding_agent = agent_client.as_agent(
-        name="GeocodingTemporalAgent", instructions=instructions, tools=geocoder.geocode
+        name="GeocodingTemporalAgent", instructions=instructions, tools=[geocode]
     )
     return geocoding_agent
