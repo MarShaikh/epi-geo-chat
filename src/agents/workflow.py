@@ -1,12 +1,18 @@
 """
 Multi-agent workflow with structured outputs for geospatial data querying and response generation.
 """
+import os
 from typing import Dict, Any
 from src.agents.query_parser import create_query_parser_agent, ParsedQuery
 from src.agents.geocoding_temporal import create_geocoding_agent, GeocodingResult
 from src.agents.stac_coordinator import create_stac_coordinator_agent, STACSearchResult
 from src.agents.response_synthesizer import create_response_synthesizer_agent
 from src.rag.collection_resolver import resolve_collections_by_keywords
+
+# observability using agent-framework with Azure Monitor OpenTelemetry
+from agent_framework.observability import configure_otel_providers
+
+configure_otel_providers()
 
 class WorkflowResult:
     """Class for the complete workflow results."""
@@ -57,7 +63,7 @@ async def process_query(user_query: str) -> WorkflowResult:
     print(f"\n[Agent 1] Parsing user query: '{user_query}'...")
     query_parser = create_query_parser_agent()
     
-    parsed_response = await query_parser.run(user_query, response_format=ParsedQuery)
+    parsed_response = await query_parser.run(user_query, options={"response_format": ParsedQuery })
     parsed_query = parsed_response.value
     
     assert isinstance(parsed_query, ParsedQuery), "Expected ParsedQuery from query parser"
@@ -98,7 +104,7 @@ async def process_query(user_query: str) -> WorkflowResult:
         Convert datetime into ISO 8601 format.
         """
         geocoding_response = await geocoding_agent.run(
-            geocoding_prompt, response_format=GeocodingResult
+            geocoding_prompt, options={"response_format": GeocodingResult }
         )
         geocoding_result = geocoding_response.value
         
@@ -169,7 +175,7 @@ async def process_query(user_query: str) -> WorkflowResult:
         stac_prompt = f"User query: {user_query}\n\nProvide relevant information."
     
     # Run STAC agent
-    stac_response = await stac_agent.run(stac_prompt, response_format=STACSearchResult)
+    stac_response = await stac_agent.run(stac_prompt, options={"response_format": STACSearchResult })
     stac_search_result = stac_response.value
     
     assert isinstance(stac_search_result, STACSearchResult), "Expected STACSearchResult from STAC agent"
