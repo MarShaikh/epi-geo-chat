@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict, List, Optional, Annotated, Any
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
@@ -7,26 +8,35 @@ from src.stac.catalog_client import GeoCatalogClient
 class STACItem(BaseModel):
     """Individual STAC item summary."""
 
-    id: str = Field(description="Unique identifier for the STAC item")
-    datetime: str = Field(description="Datetime of the observation")
-    assets: List[str] = Field(
+    id: Annotated[str, Field(description="Unique identifier for the STAC item")]
+    datetime: Annotated[str, Field(description="Datetime of the observation")]
+    assets: Annotated[List[str], Field(
         description="List of available asset keys (e.g., 'COG', 'metadata')"
-    )
-
+    )]
 
 class STACSearchResult(BaseModel):
     """Structured output for STAC search results."""
 
-    count: int = Field(description="Total number of items found")
-    collections: List[str] = Field(description="Collections that were searched")
-    date_range: str = Field(description="Date range covered by the results")
-    items: List[STACItem] = Field(
+    count: Annotated[Optional[int], Field(description="Total number of items found")]
+    description: Annotated[Optional[str], Field(
+        default=None, description="Description of the search results"
+    )]
+    keywords: Annotated[Optional[List[str]], Field(
+        default=None, description="Keywords associated with the results"
+    )]
+    license: Annotated[Optional[str], Field(
+        default=None, description="License information for the data"
+    )]
+    collections: Annotated[List[str], Field(description="Collections that were searched")]
+    date_range: Annotated[str, Field(description="Date range covered by the results")]
+    items: Annotated[Optional[List[STACItem]], Field(
+        default=None,
         description="Summary of found items (limited to first 10 for brevity)"
-    )
-    bbox_searched: Optional[List[float]] = Field(
+    )]
+    bbox_searched: Annotated[Optional[List[float]], Field(
         default=None,
         description="Bounding box that was searched [min_lon, min_lat, max_lon, max_lat]",
-    )
+    )]
 
 def list_collections() -> Dict:
     """
@@ -77,11 +87,26 @@ def get_collection_details(collection_id: Annotated[str, Field(description="STAC
     
     try: 
         coll_info = catalog_client.get_collection(collection_id)
+
+        bounding_box = coll_info.get("extent", "").get("spatial", {}).get("bbox", [])[0]
+
+
+        datetime_0 = coll_info.get("extent", "").get("temporal", {}).get("interval", [])[0][0]
+        datetime_1 = coll_info.get("extent", "").get("temporal", {}).get("interval", [])[0][1]
+
+        # if datetime_1 is None, set it to current datetime in ISO format since 
+        # ongoing collections may have open-ended temporal extent
+        if datetime_1 is None:
+            datetime_1 = datetime.now().isoformat()
+        
+        datetime_range = (datetime_0, datetime_1)
         return {
+            "id": collection_id,
             "description": coll_info.get("description", ""),
             "keywords": coll_info.get("keywords", []),
-            "extent": coll_info.get("extent", ""),
-            "license": coll_info.get("license", []),
+            "bounding_box": bounding_box,
+            "date_extent": datetime_range,
+            "license": coll_info.get("license", ""),
             "providers": coll_info.get("providers", []),
         }
     except Exception as e:
