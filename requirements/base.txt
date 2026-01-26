@@ -18,7 +18,7 @@ pyproj>=3.6.0
 azure-identity>=1.15.0
 azure-storage-blob>=12.19.0
 azure-maps-search>=1.0.0
-azure-monitor-opentelemetry-exporter>=1.0.0b41
+azure-monitor-opentelemetry
 
 # Vector Store (RAG)
 chromadb>=0.4.0  
