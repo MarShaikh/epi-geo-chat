@@ -111,9 +111,7 @@ class GeoCodingService:
         try:
             search_query = location
             result = (
-                maps_client.get_geocoding(query=search_query)
-                if maps_client
-                else None
+                maps_client.get_geocoding(query=search_query) if maps_client else None
             )
 
             if result and result.get("features", False):

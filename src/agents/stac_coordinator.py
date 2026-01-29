@@ -10,33 +10,47 @@ class STACItem(BaseModel):
 
     id: Annotated[str, Field(description="Unique identifier for the STAC item")]
     datetime: Annotated[str, Field(description="Datetime of the observation")]
-    assets: Annotated[List[str], Field(
-        description="List of available asset keys (e.g., 'COG', 'metadata')"
-    )]
+    assets: Annotated[
+        List[str],
+        Field(description="List of available asset keys (e.g., 'COG', 'metadata')"),
+    ]
+
 
 class STACSearchResult(BaseModel):
     """Structured output for STAC search results."""
 
     count: Annotated[Optional[int], Field(description="Total number of items found")]
-    description: Annotated[Optional[str], Field(
-        default=None, description="Description of the search results"
-    )]
-    keywords: Annotated[Optional[List[str]], Field(
-        default=None, description="Keywords associated with the results"
-    )]
-    license: Annotated[Optional[str], Field(
-        default=None, description="License information for the data"
-    )]
-    collections: Annotated[List[str], Field(description="Collections that were searched")]
+    description: Annotated[
+        Optional[str],
+        Field(default=None, description="Description of the search results"),
+    ]
+    keywords: Annotated[
+        Optional[List[str]],
+        Field(default=None, description="Keywords associated with the results"),
+    ]
+    license: Annotated[
+        Optional[str],
+        Field(default=None, description="License information for the data"),
+    ]
+    collections: Annotated[
+        List[str], Field(description="Collections that were searched")
+    ]
     date_range: Annotated[str, Field(description="Date range covered by the results")]
-    items: Annotated[Optional[List[STACItem]], Field(
-        default=None,
-        description="Summary of found items (limited to first 10 for brevity)"
-    )]
-    bbox_searched: Annotated[Optional[List[float]], Field(
-        default=None,
-        description="Bounding box that was searched [min_lon, min_lat, max_lon, max_lat]",
-    )]
+    items: Annotated[
+        Optional[List[STACItem]],
+        Field(
+            default=None,
+            description="Summary of found items (limited to first 10 for brevity)",
+        ),
+    ]
+    bbox_searched: Annotated[
+        Optional[List[float]],
+        Field(
+            default=None,
+            description="Bounding box that was searched [min_lon, min_lat, max_lon, max_lat]",
+        ),
+    ]
+
 
 def list_collections() -> Dict:
     """
@@ -56,49 +70,54 @@ def list_collections() -> Dict:
 
     collections = []
     for coll in response.get("collections", []):
-        collections.append({
-            "id": coll['id'],
-            "title": coll.get('title', ''),
-            "description": coll.get('description', ''),
-        })
-    
-    return {
-        "count": len(collections),
-        "collections": collections
-    }
+        collections.append(
+            {
+                "id": coll["id"],
+                "title": coll.get("title", ""),
+                "description": coll.get("description", ""),
+            }
+        )
 
-def get_collection_details(collection_id: Annotated[str, Field(description="STAC collection ID")]) -> Dict[str, Any]:
+    return {"count": len(collections), "collections": collections}
+
+
+def get_collection_details(
+    collection_id: Annotated[str, Field(description="STAC collection ID")],
+) -> Dict[str, Any]:
     """
     Get detailed information about a specific STAC collection.
-      
+
     Use this when the user asks about a specific data type:
-    - "What do you know about vegetation data?" 
+    - "What do you know about vegetation data?"
     - "Tell me about the temperature collections"
     - "Give me details on modis-11A1-061-nigeria-557"
-    
+
     Args:
         collection_id: The STAC collection ID to get details for
-    
+
     Returns:
         Detailed collection metadata including description, extent, keywords, license.
     """
     print(f"Fetching details for collection ID: {collection_id}")
     catalog_client = GeoCatalogClient()
-    
-    try: 
+
+    try:
         coll_info = catalog_client.get_collection(collection_id)
 
         bounding_box = coll_info.get("extent", "").get("spatial", {}).get("bbox", [])[0]
 
+        datetime_0 = (
+            coll_info.get("extent", "").get("temporal", {}).get("interval", [])[0][0]
+        )
+        datetime_1 = (
+            coll_info.get("extent", "").get("temporal", {}).get("interval", [])[0][1]
+        )
 
-        datetime_0 = coll_info.get("extent", "").get("temporal", {}).get("interval", [])[0][0]
-        datetime_1 = coll_info.get("extent", "").get("temporal", {}).get("interval", [])[0][1]
-
-        # if datetime_1 is None, set it to current datetime in ISO format since 
+        # if datetime_1 is None, set it to current datetime in ISO format since
         # ongoing collections may have open-ended temporal extent
         if datetime_1 is None:
             datetime_1 = datetime.now().isoformat()
-        
+
         datetime_range = (datetime_0, datetime_1)
         return {
             "id": collection_id,
@@ -110,10 +129,7 @@ def get_collection_details(collection_id: Annotated[str, Field(description="STAC
             "providers": coll_info.get("providers", []),
         }
     except Exception as e:
-        return {
-            "id": collection_id,
-            "error": str(e)
-        }
+        return {"id": collection_id, "error": str(e)}
 
 
 def search_and_summarize(
@@ -156,8 +172,10 @@ def search_and_summarize(
     # if no collections specified, search all
     if not collections:
         all_collections_resp = catalog_client.list_collections()
-        collections = [coll["id"] for coll in all_collections_resp.get("collections", [])]
-    
+        collections = [
+            coll["id"] for coll in all_collections_resp.get("collections", [])
+        ]
+
     # perform the search
     search_results = catalog_client.search(
         bbox=bbox,
@@ -209,14 +227,14 @@ def create_stac_coordinator_agent():
     """
     Agent 3: Execute STAC catalog searches and optimize results.
 
-    Handles both data search AND metadata queries using the appropriate function tool. 
+    Handles both data search AND metadata queries using the appropriate function tool.
 
-    Tools available: 
+    Tools available:
     - list_collection_names(): To list all available STAC collections
     - get_collection_details(collection_id): To get details about a specific collection
     - search_and_summarize():  To perform STAC searches and summarize results
 
-    Returns: 
+    Returns:
         Structured output using STACSearchResult Pydantic model with nested STACItem objects.
     """
 

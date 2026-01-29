@@ -8,29 +8,40 @@ from datetime import datetime
 class GeocodingResult(BaseModel):
     """Structured output for geocoding and temporal resolution."""
 
-    bbox: Annotated[Optional[List[float]], Field(
-        default=None, description="Bounding box [min_lon, min_lat, max_lon, max_lat]"
-    )]
-    datetime: Annotated[Optional[str], Field(
-        default=None,
-        description="ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)",
-    )]
-    location_source: Annotated[Optional[str], Field(
-        default=None,
-        description="Source of geocoding result: local, azure_maps, or llm",
-    )]
+    bbox: Annotated[
+        Optional[List[float]],
+        Field(
+            default=None,
+            description="Bounding box [min_lon, min_lat, max_lon, max_lat]",
+        ),
+    ]
+    datetime: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description="ISO 8601 datetime or range (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD)",
+        ),
+    ]
+    location_source: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description="Source of geocoding result: local, azure_maps, or llm",
+        ),
+    ]
+
 
 async def geocode(
-        location: Annotated[str, Field(description="Location name to geocode")]
+    location: Annotated[str, Field(description="Location name to geocode")],
 ) -> Optional[Dict]:
-    """                                                                                                                                    
-    Geocode a location name to a bounding box.                                                                                             
-                                                                                                                                           
-    Returns:                                                                                                                               
-        Dict with name, bbox, and source fields, or None if geocoding fails.                                                               
-    """                                                                                                                                    
-    geocoder = GeoCodingService()                                                                                                          
-    return await geocoder.geocode(location)    
+    """
+    Geocode a location name to a bounding box.
+
+    Returns:
+        Dict with name, bbox, and source fields, or None if geocoding fails.
+    """
+    geocoder = GeoCodingService()
+    return await geocoder.geocode(location)
 
 
 def create_geocoding_agent():
@@ -41,9 +52,9 @@ def create_geocoding_agent():
     The LLM handles temporal resolution.
     Returns structured output using GeocodingResult Pydantic model.
     """
-    
+
     # Get the current date for relative time calculations
-    current_date = datetime.today().strftime('%Y-%m-%d')
+    current_date = datetime.today().strftime("%Y-%m-%d")
 
     instructions = f"""
     You are a geocoding and temporal resolution agent for geospatial data queries.

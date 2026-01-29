@@ -18,7 +18,7 @@ def create_agent_client() -> AzureOpenAIResponsesClient:
     api_key = os.environ.get("AZURE_OPENAI_API_KEY")
     endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
     # Support multiple common env var names for the deployment
-    deployment_name = ( 
+    deployment_name = (
         os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME")
         or os.environ.get("AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME")
         or os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT")
