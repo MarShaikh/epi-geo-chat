@@ -33,6 +33,17 @@ class WorkflowResult:
             "stac_results": self.stac_search_result.model_dump() if self.stac_search_result else None,
             "final_response": self.final_response,
         }
+
+# set up observability
+from src.utils.observability import setup_telemetry
+from src.utils.observability import traced
+from opentelemetry.trace import SpanKind
+from opentelemetry.trace import get_current_span
+from opentelemetry.trace.span import format_trace_id
+
+setup_telemetry()
+
+@traced("Multi-Agent Workflow Execution", kind=SpanKind.CLIENT)
 async def process_query(user_query: str) -> WorkflowResult:
     """
     Execute the multi-agent workflow with automatic intent-based routing.
@@ -53,6 +64,9 @@ async def process_query(user_query: str) -> WorkflowResult:
         >>> result = await process_query("Show me rainfall for Lagos in February 2024")  # data_search
         >>> result = await process_query("What collections do we have?")  # metadata_query
     """
+    current_span = get_current_span()
+    print(f"Trace ID: {format_trace_id(current_span.get_span_context().trace_id)}")
+
     # Agent 1: Query Parsing
 
     print(f"\n[Agent 1] Parsing user query: '{user_query}'...")
@@ -98,6 +112,7 @@ async def process_query(user_query: str) -> WorkflowResult:
         Use the geocode() function tool for location resolution.
         Convert datetime into ISO 8601 format.
         """
+
         geocoding_response = await geocoding_agent.run(
             geocoding_prompt, options={"response_format": GeocodingResult }
         )
