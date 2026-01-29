@@ -129,7 +129,7 @@ async def process_query(user_query: str) -> WorkflowResult:
         # Data search: Use search_and_summarize
         stac_prompt = f"""
         Search the STAC catalogs for actual data items:
-        - Collections: {collections[0] if collections else 'all'}
+        - Collections: {collections if collections else 'all'}
         - BBox: {geocoding_result.bbox}
         - Datetime: {geocoding_result.datetime}
         
