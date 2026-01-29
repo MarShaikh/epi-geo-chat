@@ -9,11 +9,6 @@ from src.agents.stac_coordinator import create_stac_coordinator_agent, STACSearc
 from src.agents.response_synthesizer import create_response_synthesizer_agent
 from src.rag.collection_resolver import resolve_collections_by_keywords
 
-# observability using agent-framework with Azure Monitor OpenTelemetry
-from agent_framework.observability import configure_otel_providers
-
-configure_otel_providers()
-
 class WorkflowResult:
     """Class for the complete workflow results."""
     def __init__(
