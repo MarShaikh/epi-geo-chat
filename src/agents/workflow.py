@@ -227,87 +227,124 @@ async def run_response_synthesizer(
     return final_response.text
 
 
-@traced("Multi-Agent Workflow Execution", kind=SpanKind.CLIENT)
+class AgentWorkflow:
+    """
+    Orchestrates the multi-agent workflow for geospatial data querying.
+
+    This class uses composition to coordinate existing agent functions,
+    following the orchestrator-worker pattern. Each agent maintains single
+    responsibility while the workflow handles routing and data flow.
+
+    Attributes:
+        agents: Registry of agent runner functions used in the workflow.
+
+    Example:
+        >>> workflow = AgentWorkflow()
+        >>> result = await workflow.run("Show me rainfall for Lagos in February 2024")
+    """
+
+    def __init__(self):
+        """Initialize the workflow with the agent registry."""
+        self.agents = {
+            "query_parser": run_query_parser,
+            "geocoding": run_geocoding_agent,
+            "stac_coordinator": run_stac_agent,
+            "response_synthesizer": run_response_synthesizer,
+        }
+
+    @traced("AgentWorkflow.run", kind=SpanKind.CLIENT)
+    async def run(self, user_query: str) -> WorkflowResult:
+        """
+        Execute the multi-agent workflow with automatic intent-based routing.
+
+        Chains agents sequentially, passing validated Pydantic models between
+        each step for type safety:
+        1. Parses the query (Agent 1)
+        2. Routes based on intent (data_search vs metadata_query)
+        3. Executes appropriate pipeline
+        4. Returns unified WorkflowResult
+
+        Args:
+            user_query: Natural language query from user
+
+        Returns:
+            WorkflowResult: Complete results including parsed query, geocoding,
+                          STAC results, and final response
+        """
+        current_span = get_current_span()
+        print(f"Trace ID: {format_trace_id(current_span.get_span_context().trace_id)}")
+
+        # Agent 1: Query Parsing
+        parsed_query = await self.agents["query_parser"](user_query=user_query)
+
+        # Resolve collection if keywords are provided using RAG
+        collections = []
+        if parsed_query.data_type_keywords:
+            collections = resolve_collections_by_keywords(
+                data_type_keywords=parsed_query.data_type_keywords,
+                limit=len(parsed_query.data_type_keywords),
+            )
+            print(f"[RAG] Resolved Collections: {collections}")
+
+        # Agent 2: Geocoding & Temporal Resolution
+        if (
+            parsed_query.location
+            or parsed_query.datetime
+            or parsed_query.intent == "data_search"
+        ):
+            geocoding_result = await self.agents["geocoding"](
+                location=parsed_query.location, datetime=parsed_query.datetime
+            )
+        else:
+            geocoding_result = GeocodingResult(
+                bbox=None, datetime=None, location_source="not_applicable"
+            )
+
+        # Agent 3: STAC Coordinator
+        stac_search_result = await self.agents["stac_coordinator"](
+            user_query=user_query,
+            intent=parsed_query.intent,
+            metadata_sub_intent=parsed_query.metadata_sub_intent,
+            collections=collections,
+            bbox=geocoding_result.bbox,
+            datetime=geocoding_result.datetime,
+        )
+
+        # Agent 4: Response Synthesis
+        final_response = await self.agents["response_synthesizer"](
+            user_query=user_query,
+            item_count=stac_search_result.count or 0,
+            date_range=stac_search_result.date_range,
+            collections=stac_search_result.collections,
+            sample_items=stac_search_result.items or [],
+        )
+
+        print(f"\n{'='*60}")
+        print(f"Final Response")
+        print(f"\n{'='*60}\n  {final_response}\n")
+        print(f"\n{'='*60}")
+
+        return WorkflowResult(
+            user_query=user_query,
+            parsed_query=parsed_query,
+            geocoding_result=geocoding_result,
+            stac_search_result=stac_search_result,
+            final_response=final_response,
+        )
+
+
 async def process_query(user_query: str) -> WorkflowResult:
     """
-    Execute the multi-agent workflow with automatic intent-based routing.
+    Convenience function that executes the AgentWorkflow.
 
-    This function chains the agents manually, passing validated Pydantic models
-    between each step for type safety and reliability.
-    1. Parses the query (Agent 1)
-    2. Routes based on intent (data_search vs metadata_query)
-    3. Executes appropriate pipeline
-    4. Returns unified WorkflowResult
+    This function is kept for backward compatibility. For new code,
+    prefer using AgentWorkflow directly.
 
     Args:
-        user_query (str): Natural language query from user
+        user_query: Natural language query from user
 
     Returns:
-        WorkflowResult: Complete results including parsed query, geocoding, STAC results, and final response
-
-    Examples:
-        >>> result = await process_query("Show me rainfall for Lagos in February 2024")  # data_search
-        >>> result = await process_query("What collections do we have?")  # metadata_query
+        WorkflowResult: Complete workflow results
     """
-    current_span = get_current_span()
-    print(f"Trace ID: {format_trace_id(current_span.get_span_context().trace_id)}")
-
-    # Agent 1: Query Parsing
-    parsed_query = await run_query_parser(user_query=user_query)
-
-    # Resolve collection if keywords are provided using RAG
-    collections = []
-    if parsed_query.data_type_keywords:
-        collections = resolve_collections_by_keywords(
-            data_type_keywords=parsed_query.data_type_keywords,
-            limit=len(parsed_query.data_type_keywords),
-        )
-        print(f"[RAG] Resolved Collections: {collections}")
-
-    # Agent 2: Geocoding & Temporal Resolution
-    # Only geocode if we have location/datetime OR if it's a data_search
-    if (
-        parsed_query.location
-        or parsed_query.datetime
-        or parsed_query.intent == "data_search"
-    ):
-        geocoding_result = await run_geocoding_agent(
-            location=parsed_query.location, datetime=parsed_query.datetime
-        )
-    else:
-        # Create empty geocoding result for metadata queries without location
-        geocoding_result = GeocodingResult(
-            bbox=None, datetime=None, location_source="not_applicable"
-        )
-
-    # Agent 3: STAC Coordinator
-    stac_search_result = await run_stac_agent(
-        user_query=user_query,
-        intent=parsed_query.intent,
-        metadata_sub_intent=parsed_query.metadata_sub_intent,
-        collections=collections,
-        bbox=geocoding_result.bbox,
-        datetime=geocoding_result.datetime,
-    )
-
-    # Agent 4: Response Synthesis
-    final_response = await run_response_synthesizer(
-        user_query=user_query,
-        item_count=stac_search_result.count or 0,
-        date_range=stac_search_result.date_range,
-        collections=stac_search_result.collections,
-        sample_items=stac_search_result.items or [],
-    )
-
-    print(f"\n{'='*60}")
-    print(f"Final Response")
-    print(f"\n{'='*60}\n  {final_response}\n")
-    print(f"\n{'='*60}")
-
-    return WorkflowResult(
-        user_query=user_query,
-        parsed_query=parsed_query,
-        geocoding_result=geocoding_result,
-        stac_search_result=stac_search_result,
-        final_response=final_response,
-    )
+    workflow = AgentWorkflow()
+    return await workflow.run(user_query)
