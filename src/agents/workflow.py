@@ -129,19 +129,34 @@ class AgentWorkflow:
                 bbox=None, datetime=None, location_source="not_applicable"
             )
 
-        # Agent 3: STAC Coordinator
-        stac_search_result = await self.agents["stac_coordinator"](
-            user_query=user_query,
-            intent=parsed_query.intent,
-            metadata_sub_intent=parsed_query.metadata_sub_intent,
-            collections=collections,
-            bbox=geocoding_result.bbox,
-            datetime=geocoding_result.datetime,
-        )
+        if parsed_query.intent not in ["data_search", "metadata_query"]:
+            print(f"\n[Agent 3] Skipping STAC search for intent: {parsed_query.intent}")
+            stac_search_result = STACSearchResult(
+                count=0,
+                collections=collections,
+                date_range="Not applicable",
+                items=[],
+                bbox_searched=[],
+                description="STAC search not applicable for this intent",
+                keywords=[],
+                license=None,
+            )
+        else:
+            # Agent 3: STAC Coordinator
+            stac_search_result = await self.agents["stac_coordinator"](
+                user_query=user_query,
+                intent=parsed_query.intent,
+                metadata_sub_intent=parsed_query.metadata_sub_intent,
+                collections=collections,
+                bbox=geocoding_result.bbox,
+                datetime=geocoding_result.datetime,
+            )
 
         # Agent 4: Response Synthesis
         final_response = await self.agents["response_synthesizer"](
             user_query=user_query,
+            intent=parsed_query.intent,
+            metadata_sub_intent=parsed_query.metadata_sub_intent,
             item_count=stac_search_result.count or 0,
             date_range=stac_search_result.date_range,
             collections=stac_search_result.collections,
