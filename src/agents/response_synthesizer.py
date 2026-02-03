@@ -16,6 +16,11 @@ def create_response_synthesizer_agent():
     Your response should: 
     - Confirm what data was found. 
     - Summarize key details (date range, location, number of items)
+    - Update response based on intent and metadata sub-intent:
+      - if intent is "data_search", focus on data availability
+      - if intent is "metadata_query", focus on metadata details
+      - if intent is something else, adjust accordingly
+      
     - Explain what the data represents
     - Suggest what the user can do next (visualise, analyse, download, etc.)
     - Be conversational and helpful
