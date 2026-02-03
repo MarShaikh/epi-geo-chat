@@ -1,0 +1,99 @@
+[
+    {
+      "id": "q001",
+      "query": "Show me rainfall in Lagos for February 2024",
+      "intent": "data_search",
+      "metadata-sub-intent": null,
+      "expected_params": {
+        "location": "Lagos",
+        "collections": ["Nigeria-CHIRPS"],
+        "bbox": [3.0, 6.4, 3.7, 6.7],
+        "datetime": "2024-02-01/2024-02-29"
+      },
+      "difficulty": "easy",
+      "notes": "Simple spatial + temporal query"
+    },
+    {
+      "id": "q002",
+      "query": "What MODIS temperature data do we have for Kano in 2023?",
+      "intent": "metadata_query",
+      "expected_params": {
+        "location": "Kano",
+        "collections": ["modis-11A1-061-nigeria"],
+        "bbox": [8.3, 11.8, 8.7, 12.2],
+        "datetime": "2023-01-01/2023-12-31"
+      },
+      "difficulty": "easy"
+    },
+    {
+      "id": "q003",
+      "query": "Compare CHIRPS rainfall coverage for Nigeria last month",
+      "intent": "data_search",
+      "expected_params": {
+        "location": "Nigeria",
+        "collections": ["Nigeria-CHIRPS"],
+        "bbox": [2.31, 3.84, 15.13, 14.15],
+        "datetime": "relative:last_month"
+      },
+      "difficulty": "difficult",
+      "notes": "Relative temporal query"
+    },
+    {
+      "id": "q004",
+      "query": "Show temperature trends near Murtala Muhammed Airport",
+      "intent": "analysis",
+      "expected_params": {
+        "collections": ["modis-11A1-061-nigeria"],
+        "location": "Murtala Muhammed Airport",
+        "analysis_type": "trend"
+      },
+      "difficulty": "medium",
+      "notes": "Geocoding challenge - specific landmark"
+    },
+    {
+      "id": "q005",
+      "query": "What's the data quality like for northern Nigeria precipitation?",
+      "intent": "metadata_query",
+      "expected_params": {
+        "collections": ["Nigeria-CHIRPS"],
+        "bbox": [2.31, 10.0, 15.13, 14.15],
+        "focus": "quality"
+      },
+      "difficulty": "medium"
+    },
+    {
+      "id": "q006",
+      "query": "Generate rainfall time series for Port Harcourt 2020-2024",
+      "intent": "analysis",
+      "expected_params": {
+        "collections": ["Nigeria-CHIRPS"],
+        "location": "Port Harcourt",
+        "datetime": "2020-01-01/2024-12-31",
+        "analysis_type": "time_series"
+      },
+      "difficulty": "hard",
+      "requires_code": true
+    },
+    {
+      "id": "q007",
+      "query": "What happened in Lagos last summer?",
+      "intent": "data_search",
+      "expected_params": {
+        "location": "Lagos",
+        "datetime": "2025-06-01/2025-08-31"
+      },
+      "difficulty": "very hard",
+      "notes": "Ambiguous - no collection specified, relative season"
+    },
+    {
+      "id": "q010",
+      "query": "List all available datasets for Nigeria",
+      "intent": "metadata_query",
+      "sub-intent": "list_collections",
+      "expected_params": {
+        "location": "Nigeria",
+        "datetime": "None"
+    },
+      "difficulty": "medium"
+    }
+]

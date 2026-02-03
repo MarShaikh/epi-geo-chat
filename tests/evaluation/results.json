@@ -1,0 +1,220 @@
+[
+    {
+        "query_id": "q001",
+        "query": "Show me rainfall in Lagos for February 2024",
+        "expected_intent": "data_search",
+        "parsed_intent": "data_search",
+        "expected_metadata_sub_intent": null,
+        "parsed_metadata_sub_intent": null,
+        "expected_collections": [
+            "Nigeria-CHIRPS"
+        ],
+        "parsed_collections": [
+            "Nigeria-CHIRPS"
+        ],
+        "parsed_location": "Lagos",
+        "expected_location": "Lagos",
+        "expected_bbox": [
+            3.0,
+            6.4,
+            3.7,
+            6.7
+        ],
+        "parsed_bbox": [
+            2.702159892999987,
+            6.370839257000114,
+            4.350837749000107,
+            6.698352113000169
+        ],
+        "expected_datetime": "2024-02-01/2024-02-29",
+        "parsed_datetime": "2024-02-01/2024-02-29"
+    },
+    {
+        "query_id": "q002",
+        "query": "What MODIS temperature data do we have for Kano in 2023?",
+        "expected_intent": "metadata_query",
+        "parsed_intent": "metadata_query",
+        "expected_metadata_sub_intent": null,
+        "parsed_metadata_sub_intent": "count_items",
+        "expected_collections": [
+            "modis-11A1-061-nigeria"
+        ],
+        "parsed_collections": [
+            "modis-11A1-061-nigeria-557",
+            "modis-13Q1-061-nigeria-344"
+        ],
+        "parsed_location": "Kano",
+        "expected_location": "Kano",
+        "expected_bbox": [
+            8.3,
+            11.8,
+            8.7,
+            12.2
+        ],
+        "parsed_bbox": [
+            7.685876641000164,
+            10.548981402000038,
+            9.365196170000104,
+            12.599989680000135
+        ],
+        "expected_datetime": "2023-01-01/2023-12-31",
+        "parsed_datetime": "2023-01-01/2023-12-31"
+    },
+    {
+        "query_id": "q003",
+        "query": "Compare CHIRPS rainfall coverage for Nigeria last month",
+        "expected_intent": "data_search",
+        "parsed_intent": "analysis",
+        "expected_metadata_sub_intent": null,
+        "parsed_metadata_sub_intent": null,
+        "expected_collections": [
+            "Nigeria-CHIRPS"
+        ],
+        "parsed_collections": [
+            "Nigeria-CHIRPS",
+            "modis-11A1-061-nigeria-557"
+        ],
+        "parsed_location": "Nigeria",
+        "expected_location": "Nigeria",
+        "expected_bbox": [
+            2.31,
+            3.84,
+            15.13,
+            14.15
+        ],
+        "parsed_bbox": [
+            2.31,
+            3.84,
+            15.13,
+            14.15
+        ],
+        "expected_datetime": "relative:last_month",
+        "parsed_datetime": "2026-01-01/2026-01-31"
+    },
+    {
+        "query_id": "q004",
+        "query": "Show temperature trends near Murtala Muhammed Airport",
+        "expected_intent": "analysis",
+        "parsed_intent": "analysis",
+        "expected_metadata_sub_intent": null,
+        "parsed_metadata_sub_intent": null,
+        "expected_collections": [
+            "modis-11A1-061-nigeria"
+        ],
+        "parsed_collections": [
+            "modis-11A1-061-nigeria-557"
+        ],
+        "parsed_location": "Murtala Muhammed Airport",
+        "expected_location": "Murtala Muhammed Airport",
+        "expected_bbox": null,
+        "parsed_bbox": [
+            3.3031229972839355,
+            6.542020320892334,
+            3.337029457092285,
+            6.606244087219238
+        ],
+        "expected_datetime": null,
+        "parsed_datetime": null
+    },
+    {
+        "query_id": "q005",
+        "query": "What's the data quality like for northern Nigeria precipitation?",
+        "expected_intent": "metadata_query",
+        "parsed_intent": "metadata_query",
+        "expected_metadata_sub_intent": null,
+        "parsed_metadata_sub_intent": "collection_details",
+        "expected_collections": [
+            "Nigeria-CHIRPS"
+        ],
+        "parsed_collections": [
+            "modis-11A1-061-nigeria-557"
+        ],
+        "parsed_location": "northern Nigeria",
+        "expected_location": null,
+        "expected_bbox": [
+            2.31,
+            10.0,
+            15.13,
+            14.15
+        ],
+        "parsed_bbox": [
+            2.676922082901001,
+            4.069086074829102,
+            14.678024291992188,
+            13.885655403137207
+        ],
+        "expected_datetime": null,
+        "parsed_datetime": null
+    },
+    {
+        "query_id": "q006",
+        "query": "Generate rainfall time series for Port Harcourt 2020-2024",
+        "expected_intent": "analysis",
+        "parsed_intent": "analysis",
+        "expected_metadata_sub_intent": null,
+        "parsed_metadata_sub_intent": null,
+        "expected_collections": [
+            "Nigeria-CHIRPS"
+        ],
+        "parsed_collections": [
+            "Nigeria-CHIRPS"
+        ],
+        "parsed_location": "Port Harcourt",
+        "expected_location": "Port Harcourt",
+        "expected_bbox": null,
+        "parsed_bbox": [
+            6.940314769744873,
+            4.713159084320068,
+            7.078143119812012,
+            4.824075222015381
+        ],
+        "expected_datetime": "2020-01-01/2024-12-31",
+        "parsed_datetime": "2020-01-01/2024-12-31"
+    },
+    {
+        "query_id": "q007",
+        "query": "What happened in Lagos last summer?",
+        "expected_intent": "data_search",
+        "parsed_intent": "chat",
+        "expected_metadata_sub_intent": null,
+        "parsed_metadata_sub_intent": null,
+        "expected_collections": null,
+        "parsed_collections": [],
+        "parsed_location": "Lagos",
+        "expected_location": "Lagos",
+        "expected_bbox": null,
+        "parsed_bbox": [
+            2.702159892999987,
+            6.370839257000114,
+            4.350837749000107,
+            6.698352113000169
+        ],
+        "expected_datetime": "2025-06-01/2025-08-31",
+        "parsed_datetime": null
+    },
+    {
+        "query_id": "q010",
+        "query": "List all available datasets for Nigeria",
+        "expected_intent": "metadata_query",
+        "parsed_intent": "metadata_query",
+        "expected_metadata_sub_intent": null,
+        "parsed_metadata_sub_intent": "list_collections",
+        "expected_collections": null,
+        "parsed_collections": [
+            "modis-11A1-061-nigeria-557",
+            "modis-13Q1-061-nigeria-344",
+            "Nigeria-CHIRPS"
+        ],
+        "parsed_location": "Nigeria",
+        "expected_location": "Nigeria",
+        "expected_bbox": null,
+        "parsed_bbox": [
+            2.31,
+            3.84,
+            15.13,
+            14.15
+        ],
+        "expected_datetime": "None",
+        "parsed_datetime": null
+    }
+]
