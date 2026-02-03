@@ -153,12 +153,14 @@ async def run_stac_agent(
 
 @traced_agent(
     "agent_4_response_synthesizer",
-    capture_args=["user_query", "item_count", "date_range", "collections"],
+    capture_args=["user_query", "intent", "metadata_sub_intent", "item_count", "date_range", "collections"],
     capture_output="final_response",
 )
 async def run_response_synthesizer(
     *,
     user_query: str,
+    intent: str,
+    metadata_sub_intent: Optional[str],
     item_count: int,
     date_range: Optional[str],
     collections: List[str],
@@ -170,13 +172,15 @@ async def run_response_synthesizer(
     synthesizer_prompt = f"""
     User asked: "{user_query}"
 
-    Search Results:
+    Parameters from STAC including intent:
     - Found {item_count} items
+    - Intent: {intent}
+    - Metadata Sub-Intent: {metadata_sub_intent}
     - Date Range: {date_range}
     - Collections: {collections}
     - Sample Items: {sample_items[:10]}
 
-    Generate a helpful response to the user query based on the search results.
+    Generate a helpful response to the user query based on these results. 
     """
     final_response = await synthesizer.run(synthesizer_prompt)
     print(f"  Response Generated.")
