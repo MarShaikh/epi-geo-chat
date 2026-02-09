@@ -33,17 +33,26 @@ The system uses a 4-agent pipeline to:
 - Azure GeoCatalog (STAC API)
 - Azure Maps (Geocoding)
 - Azure Blob Storage (COG assets)
+- ChromaDB for RAG-based collection resolution
+
+**Observability:**
+- Azure Monitor (Application Insights)
+- OpenTelemetry tracing with custom decorators
+- Per-agent span capture with argument/output serialization
+
+**Evaluations:**
+- Custom evaluation framework with golden dataset
+- Accuracy, Precision, Recall, and IoU metrics
 
 **Future Components:**
 - FastAPI backend
 - React + TypeScript frontend
-- ChromaDB for RAG
 - Docker for code execution
 
 ### Agent Pipeline
 
 ```
-User Query → Parser → Geocoder → STAC Search → Synthesizer → Response
+User Query → Parser → Collection Resolver (RAG) → Geocoder → STAC Search → Synthesizer → Response
 ```
 
 **Agent 1: Query Parser**
@@ -66,6 +75,32 @@ User Query → Parser → Geocoder → STAC Search → Synthesizer → Response
 **Agent 4: Response Synthesizer**
 - Generates natural language response from search results
 - Returns: User-friendly summary
+
+### RAG: Collection Resolution
+
+The system uses **ChromaDB** for semantic collection resolution. User keywords (e.g., "rainfall", "temperature") are matched against indexed STAC collection metadata to find the most relevant collection IDs, avoiding hardcoded mappings.
+
+- `CollectionVectorStore` (`src/rag/vector_store.py`) — Indexes collection titles, descriptions, and keywords into ChromaDB; performs semantic search
+- `resolve_collections_by_keywords()` (`src/rag/collection_resolver.py`) — Convenience function used in the agent workflow
+- `scripts/index_collections.py` — Populates the vector store from the GeoCatalog API
+
+See [docs/rag.md](docs/rag.md) for details.
+
+### Observability
+
+End-to-end tracing with **Azure Monitor OpenTelemetry**. Each agent is decorated with `@traced_agent` to capture inputs/outputs as span attributes, with workflow-level trace ID correlation in Application Insights.
+
+See [docs/observability.md](docs/observability.md) for details.
+
+### Evaluations
+
+Custom evaluation framework with a golden dataset of 8 annotated queries. Computes accuracy, precision, recall per field, and bounding box IoU.
+
+```bash
+python tests/evaluation/evaluate.py
+```
+
+See [docs/evaluations.md](docs/evaluations.md) for details.
 
 ---
 
@@ -166,6 +201,8 @@ cp .env.example .env
 # - GEOCATALOG_URL
 # - GEOCATALOG_SCOPE
 # - AZURE_MAPS_SUBSCRIPTION_KEY
+# - CHROMA_CLIENT_URL                      (for RAG collection resolution)
+# - APPLICATIONINSIGHTS_CONNECTION_STRING  (for observability)
 
 # Test setup
 python scripts/test_agent_framework.py
@@ -183,32 +220,55 @@ epi-geo-chat/
 ├── src/
 │   ├── agents/              # Agent Framework agents
 │   │   ├── agent_config.py
+│   │   ├── agent_runners.py       # Agent execution with tracing
 │   │   ├── query_parser.py
 │   │   ├── geocoding_temporal.py
 │   │   ├── stac_coordinator.py
-│   │   └── response_synthesizer.py
+│   │   ├── response_synthesizer.py
+│   │   └── workflow.py            # Orchestration with workflow-level tracing
 │   ├── stac/                # STAC & geocoding
 │   │   ├── catalog_client.py
 │   │   └── geocoding.py
-│   ├── rag/                 # RAG (planned)
+│   ├── rag/                 # RAG components
+│   │   ├── collection_resolver.py
+│   │   └── vector_store.py
 │   ├── code_executor/       # Code execution (planned)
-│   └── utils/               # Logging, etc.
+│   └── utils/
+│       ├── logging_config.py      # Logging infrastructure
+│       └── observability.py       # OpenTelemetry tracing setup
 │
 ├── tests/
+│   ├── evaluation/          # Evaluation framework
+│   │   ├── evaluate.py            # QueryEvaluator with accuracy/precision/recall/IoU
+│   │   └── results.json           # Latest evaluation results
 │   ├── unit/
-│   ├── integration/
-│   └── fixtures/
+│   │   ├── test_agent_framework.py
+│   │   ├── test_catalog_client.py
+│   │   └── test_geocoding.py
+│   ├── fixtures/
+│   │   ├── sample_queries.json    # Golden dataset (8 annotated queries)
+│   │   └── env.py
+│   └── conftest.py
 │
-├── scripts/                 # Test scripts
-│   ├── test_agent_framework.py
-│   ├── test_stac.py
-│   ├── test_geocoding.py
+├── scripts/
 │   ├── test_workflow.py
-│   └── inventory_stac.py
+│   ├── inventory_stac.py
+│   └── index_collections.py
+│
+├── docs/                    # Documentation
+│   ├── agent_architecture.md
+│   ├── agent_framework.md
+│   ├── evaluations.md
+│   ├── observability.md
+│   └── rag.md
+├── docs_/                   # Design documents & analysis
+├── notebooks/               # Exploration notebooks
+├── data/                    # ChromaDB vector store data
 │
 ├── requirements/
 │   └── base.txt
 │
+├── pyproject.toml
 ├── .env.example
 └── README.md
 ```
@@ -217,25 +277,28 @@ epi-geo-chat/
 
 ## Current Status
 
-### ✅ Completed
+### Completed
 
 - 4-agent sequential workflow with structured outputs
 - 3-tier geocoding (Local → Azure Maps → LLM)
 - STAC catalog integration
 - Logging infrastructure
 - End-to-end testing
+- Observability with Azure Monitor OpenTelemetry (per-agent tracing with argument/output capture)
+- Evaluation framework with golden dataset (accuracy, precision, recall, bounding box IoU)
+- Sub-intent classification in agent pipeline
+- RAG collection resolver and vector store
+- Agent execution refactored into `agent_runners.py` with traced decorators
 
-### 🚧 In Progress
+### In Progress
 
-- Unit test coverage
-- Integration tests
+- Unit and integration test coverage
 - Documentation
 
-### 📋 Planned (Phase 1)
+### Planned
 
 - FastAPI backend with REST API
 - React frontend with map visualization
-- RAG integration with ChromaDB
 - Code generation and sandboxed execution
 - User authentication
 - Query history and caching
@@ -258,31 +321,11 @@ I found 28 CHIRPS rainfall measurements for Lagos in February 2024.
 The data covers February 1-29, 2024. You can visualize this data
 as a time series or calculate monthly averages.
 ```
-
----
-
-## Framework Choice
-
-**Microsoft Agent Framework** was chosen over Semantic Kernel and LangChain for:
-- Native Azure OpenAI integration
-- Built-in structured output support
-- Function calling capabilities
-- Microsoft's long-term support
-
-Inspired by [Microsoft Earth Copilot](https://github.com/microsoft/Earth-Copilot) (simplified from 13 to 4 agents).
-
----
-
-## Contributing
-
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
-
 ---
 
 ## Contact
 
 **Marouf Shaikh**
 GitHub: MarShaikh
+
+Inspired by [Microsoft Earth Copilot](https://github.com/microsoft/Earth-Copilot) (simplified from 13 to 4 agents).
