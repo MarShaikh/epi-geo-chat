@@ -218,7 +218,7 @@ python scripts/test_workflow.py
 ```
 epi-geo-chat/
 ├── src/
-│   ├── agents/              # Agent Framework agents
+│   ├── agents/
 │   │   ├── agent_config.py
 │   │   ├── agent_runners.py       # Agent execution with tracing
 │   │   ├── query_parser.py
@@ -226,27 +226,26 @@ epi-geo-chat/
 │   │   ├── stac_coordinator.py
 │   │   ├── response_synthesizer.py
 │   │   └── workflow.py            # Orchestration with workflow-level tracing
-│   ├── stac/                # STAC & geocoding
+│   ├── stac/
 │   │   ├── catalog_client.py
 │   │   └── geocoding.py
-│   ├── rag/                 # RAG components
+│   ├── rag/
 │   │   ├── collection_resolver.py
 │   │   └── vector_store.py
-│   ├── code_executor/       # Code execution (planned)
 │   └── utils/
-│       ├── logging_config.py      # Logging infrastructure
-│       └── observability.py       # OpenTelemetry tracing setup
+│       ├── logging_config.py
+│       └── observability.py
 │
 ├── tests/
-│   ├── evaluation/          # Evaluation framework
-│   │   ├── evaluate.py            # QueryEvaluator with accuracy/precision/recall/IoU
-│   │   └── results.json           # Latest evaluation results
+│   ├── evaluation/
+│   │   ├── evaluate.py
+│   │   └── results.json
 │   ├── unit/
 │   │   ├── test_agent_framework.py
 │   │   ├── test_catalog_client.py
 │   │   └── test_geocoding.py
 │   ├── fixtures/
-│   │   ├── sample_queries.json    # Golden dataset (8 annotated queries)
+│   │   ├── sample_queries.json    # Golden dataset
 │   │   └── env.py
 │   └── conftest.py
 │
@@ -255,21 +254,20 @@ epi-geo-chat/
 │   ├── inventory_stac.py
 │   └── index_collections.py
 │
-├── docs/                    # Documentation
+├── docs/
 │   ├── agent_architecture.md
 │   ├── agent_framework.md
 │   ├── evaluations.md
 │   ├── observability.md
-│   └── rag.md
-├── docs_/                   # Design documents & analysis
-├── notebooks/               # Exploration notebooks
-├── data/                    # ChromaDB vector store data
+│   ├── rag.md
+│   ├── nigeria_state_bboxes.json
+│   └── stac_inventory.json
 │
 ├── requirements/
 │   └── base.txt
 │
+├── .gitignore
 ├── pyproject.toml
-├── .env.example
 └── README.md
 ```
 

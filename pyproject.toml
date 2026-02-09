@@ -5,8 +5,63 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "epi-geo-chat"
 version = "0.1.0"
-dependencies = []
+description = "AI-powered multi-agent chat interface for querying geospatial climate data"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Marouf Shaikh"},
+]
+
+dependencies = [
+    # LLM & Orchestration
+    "openai>=1.3.0",
+    "agent-framework",
+    "pydantic>=2.4.0",
+    "pydantic-settings>=2.0.0",
+
+    # STAC & Geospatial
+    "pystac>=1.9.0",
+    "pystac-client>=0.7.0",
+    "rasterio>=1.3.0",
+    "geopandas>=0.14.0",
+    "shapely>=2.0.0",
+    "pyproj>=3.6.0",
+
+    # Azure Services
+    "azure-identity>=1.15.0",
+    "azure-storage-blob>=12.19.0",
+    "azure-maps-search>=1.0.0",
+    "azure-monitor-opentelemetry",
+
+    # Vector Store (RAG)
+    "chromadb>=0.4.0",
+
+    # HTTP & Utilities
+    "httpx>=0.25.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+]
+viz = [
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "folium>=0.15.0",
+]
+api = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
