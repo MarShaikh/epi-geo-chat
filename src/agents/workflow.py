@@ -2,7 +2,7 @@
 Multi-agent workflow orchestration for geospatial data querying.
 """
 
-from typing import Dict, Any, List
+from typing import AsyncGenerator, Dict, Any, List
 
 from opentelemetry.trace import SpanKind, get_current_span
 from opentelemetry.trace.span import format_trace_id
@@ -175,6 +175,109 @@ class AgentWorkflow:
             stac_search_result=stac_search_result,
             final_response=final_response,
         )
+
+
+    async def run_streaming(self, user_query: str) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Execute the workflow and yield SSE-compatible events after each agent step.
+
+        Yields dicts with: event, agent, step, data, message fields.
+        """
+        # Step 1: Query Parsing
+        yield {"event": "agent_started", "agent": "query_parser", "step": 1}
+        parsed_query = await self.agents["query_parser"](user_query=user_query)
+        yield {
+            "event": "agent_completed",
+            "agent": "query_parser",
+            "step": 1,
+            "data": parsed_query.model_dump(),
+        }
+
+        # RAG collection resolution
+        collections: List[str] = []
+        if parsed_query.data_type_keywords:
+            collections = resolve_collections_by_keywords(
+                data_type_keywords=parsed_query.data_type_keywords,
+                limit=len(parsed_query.data_type_keywords),
+            )
+
+        # Step 2: Geocoding & Temporal Resolution
+        yield {"event": "agent_started", "agent": "geocoding", "step": 2}
+        if (
+            parsed_query.location
+            or parsed_query.datetime
+            or parsed_query.intent == "data_search"
+        ):
+            geocoding_result = await self.agents["geocoding"](
+                location=parsed_query.location, datetime=parsed_query.datetime
+            )
+        else:
+            geocoding_result = GeocodingResult(
+                bbox=None, datetime=None, location_source="not_applicable"
+            )
+        yield {
+            "event": "agent_completed",
+            "agent": "geocoding",
+            "step": 2,
+            "data": geocoding_result.model_dump(),
+        }
+
+        # Step 3: STAC Coordinator
+        yield {"event": "agent_started", "agent": "stac_coordinator", "step": 3}
+        if parsed_query.intent not in ["data_search", "metadata_query"]:
+            stac_search_result = STACSearchResult(
+                count=0,
+                collections=collections,
+                date_range="Not applicable",
+                items=[],
+                bbox_searched=[],
+                description="STAC search not applicable for this intent",
+                keywords=[],
+                license=None,
+            )
+        else:
+            stac_search_result = await self.agents["stac_coordinator"](
+                user_query=user_query,
+                intent=parsed_query.intent,
+                metadata_sub_intent=parsed_query.metadata_sub_intent,
+                collections=collections,
+                bbox=geocoding_result.bbox,
+                datetime=geocoding_result.datetime,
+            )
+        yield {
+            "event": "agent_completed",
+            "agent": "stac_coordinator",
+            "step": 3,
+            "data": stac_search_result.model_dump(),
+        }
+
+        # Step 4: Response Synthesis
+        yield {"event": "agent_started", "agent": "response_synthesizer", "step": 4}
+        final_response = await self.agents["response_synthesizer"](
+            user_query=user_query,
+            intent=parsed_query.intent,
+            metadata_sub_intent=parsed_query.metadata_sub_intent,
+            item_count=stac_search_result.count or 0,
+            date_range=stac_search_result.date_range,
+            collections=stac_search_result.collections,
+            sample_items=stac_search_result.items or [],
+        )
+        yield {
+            "event": "agent_completed",
+            "agent": "response_synthesizer",
+            "step": 4,
+            "data": {"response": final_response},
+        }
+
+        # Final complete result
+        result = WorkflowResult(
+            user_query=user_query,
+            parsed_query=parsed_query,
+            geocoding_result=geocoding_result,
+            stac_search_result=stac_search_result,
+            final_response=final_response,
+        )
+        yield {"event": "done", "data": result.to_dict()}
 
 
 async def process_query(user_query: str) -> WorkflowResult:
