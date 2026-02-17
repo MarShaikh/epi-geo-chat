@@ -78,6 +78,8 @@ class GeoCatalogClient:
         response = requests.post(
             url, headers=self._get_headers(), params=params, json=body
         )
+        if not response.ok:
+            print(f"STAC search failed ({response.status_code}): {response.text}")
         response.raise_for_status()
         return response.json()
 
