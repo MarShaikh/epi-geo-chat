@@ -1,13 +1,23 @@
 import { createContext, useContext, useReducer, type ReactNode, type Dispatch } from "react";
-import type { ChatResponse, Message } from "../types/api";
+import type { ChatResponse, Message, STACCollection, STACFeatureCollection, STACFeature, TileLayerConfig } from "../types/api";
+
+export type AppMode = "chat" | "explorer";
 
 /** Application state */
 export interface AppState {
+  mode: AppMode;
   messages: Message[];
   isStreaming: boolean;
   currentStep: number | null;
   currentAgent: string | null;
   latestResponse: ChatResponse | null;
+  // Explorer state
+  collections: STACCollection[];
+  drawnBbox: number[] | null;
+  explorerResults: STACFeatureCollection | null;
+  selectedItem: STACFeature | null;
+  activeTileLayer: TileLayerConfig | null;
+  explorerLoading: boolean;
 }
 
 /** Actions */
@@ -17,14 +27,28 @@ type Action =
   | { type: "SET_STREAMING"; isStreaming: boolean }
   | { type: "SET_AGENT_PROGRESS"; step: number; agent: string }
   | { type: "SET_LATEST_RESPONSE"; response: ChatResponse }
-  | { type: "CLEAR_PROGRESS" };
+  | { type: "CLEAR_PROGRESS" }
+  | { type: "SET_MODE"; mode: AppMode }
+  | { type: "SET_COLLECTIONS"; collections: STACCollection[] }
+  | { type: "SET_DRAWN_BBOX"; bbox: number[] | null }
+  | { type: "SET_EXPLORER_RESULTS"; results: STACFeatureCollection | null }
+  | { type: "SET_SELECTED_ITEM"; item: STACFeature | null }
+  | { type: "SET_ACTIVE_TILE_LAYER"; config: TileLayerConfig | null }
+  | { type: "SET_EXPLORER_LOADING"; loading: boolean };
 
 const initialState: AppState = {
+  mode: "chat",
   messages: [],
   isStreaming: false,
   currentStep: null,
   currentAgent: null,
   latestResponse: null,
+  collections: [],
+  drawnBbox: null,
+  explorerResults: null,
+  selectedItem: null,
+  activeTileLayer: null,
+  explorerLoading: false,
 };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -51,6 +75,20 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, latestResponse: action.response };
     case "CLEAR_PROGRESS":
       return { ...state, currentStep: null, currentAgent: null };
+    case "SET_MODE":
+      return { ...state, mode: action.mode };
+    case "SET_COLLECTIONS":
+      return { ...state, collections: action.collections };
+    case "SET_DRAWN_BBOX":
+      return { ...state, drawnBbox: action.bbox };
+    case "SET_EXPLORER_RESULTS":
+      return { ...state, explorerResults: action.results };
+    case "SET_SELECTED_ITEM":
+      return { ...state, selectedItem: action.item };
+    case "SET_ACTIVE_TILE_LAYER":
+      return { ...state, activeTileLayer: action.config };
+    case "SET_EXPLORER_LOADING":
+      return { ...state, explorerLoading: action.loading };
     default:
       return state;
   }
