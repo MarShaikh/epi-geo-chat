@@ -1,5 +1,7 @@
 """STAC explorer endpoints — proxies GeoCatalog STAC API with Azure AD auth."""
 
+import asyncio
+import traceback
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -22,7 +24,7 @@ class SearchRequest(BaseModel):
 @router.get("/collections")
 async def list_collections():
     try:
-        return _client.list_collections()
+        return await asyncio.to_thread(_client.list_collections)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -30,7 +32,7 @@ async def list_collections():
 @router.get("/collections/{collection_id}")
 async def get_collection(collection_id: str):
     try:
-        return _client.get_collection(collection_id)
+        return await asyncio.to_thread(_client.get_collection, collection_id)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -38,20 +40,22 @@ async def get_collection(collection_id: str):
 @router.post("/search")
 async def search(request: SearchRequest):
     try:
-        return _client.search(
+        return await asyncio.to_thread(
+            _client.search,
             bbox=request.bbox,
             datetime=request.datetime,
             collections=request.collections,
             limit=request.limit,
         )
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.get("/collections/{collection_id}/items/{item_id}")
 async def get_item(collection_id: str, item_id: str):
     try:
-        item = _client.get_item(collection_id, item_id)
+        item = await asyncio.to_thread(_client.get_item, collection_id, item_id)
         return item.to_dict()
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
