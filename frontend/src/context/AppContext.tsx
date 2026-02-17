@@ -18,6 +18,7 @@ export interface AppState {
   selectedItem: STACFeature | null;
   activeTileLayer: TileLayerConfig | null;
   explorerLoading: boolean;
+  explorerError: string | null;
 }
 
 /** Actions */
@@ -34,7 +35,8 @@ type Action =
   | { type: "SET_EXPLORER_RESULTS"; results: STACFeatureCollection | null }
   | { type: "SET_SELECTED_ITEM"; item: STACFeature | null }
   | { type: "SET_ACTIVE_TILE_LAYER"; config: TileLayerConfig | null }
-  | { type: "SET_EXPLORER_LOADING"; loading: boolean };
+  | { type: "SET_EXPLORER_LOADING"; loading: boolean }
+  | { type: "SET_EXPLORER_ERROR"; error: string | null };
 
 const initialState: AppState = {
   mode: "chat",
@@ -49,6 +51,7 @@ const initialState: AppState = {
   selectedItem: null,
   activeTileLayer: null,
   explorerLoading: false,
+  explorerError: null,
 };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -89,6 +92,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, activeTileLayer: action.config };
     case "SET_EXPLORER_LOADING":
       return { ...state, explorerLoading: action.loading };
+    case "SET_EXPLORER_ERROR":
+      return { ...state, explorerError: action.error };
     default:
       return state;
   }
