@@ -4,6 +4,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { ChatPanel } from "./components/chat/ChatPanel";
 import { MapPanel } from "./components/map/MapPanel";
 import { ResultsPanel } from "./components/results/ResultsPanel";
+import { ExplorerPanel } from "./components/explorer/ExplorerPanel";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           chat={<ChatPanel />}
           map={<MapPanel />}
           results={<ResultsPanel />}
+          explorer={<ExplorerPanel />}
         />
       </div>
     </AppProvider>
