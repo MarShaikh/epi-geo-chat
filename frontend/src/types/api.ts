@@ -61,3 +61,51 @@ export interface Message {
   timestamp: Date;
   chatResponse?: ChatResponse;
 }
+
+/** Explorer / STAC types */
+
+export interface STACCollection {
+  id: string;
+  title?: string;
+  description?: string;
+  extent?: {
+    spatial?: { bbox?: number[][] };
+    temporal?: { interval?: (string | null)[][] };
+  };
+  keywords?: string[];
+  license?: string;
+}
+
+export interface STACFeature {
+  id: string;
+  type: "Feature";
+  geometry: { type: string; coordinates: unknown };
+  bbox?: number[];
+  properties: Record<string, unknown>;
+  assets: Record<string, { href: string; type?: string; title?: string }>;
+  collection?: string;
+  links?: { rel: string; href: string }[];
+}
+
+export interface STACFeatureCollection {
+  type: "FeatureCollection";
+  features: STACFeature[];
+  numberMatched?: number;
+  numberReturned?: number;
+}
+
+export interface STACSearchRequest {
+  bbox?: number[];
+  datetime?: string;
+  collections?: string[];
+  limit?: number;
+}
+
+export interface TileLayerConfig {
+  collectionId: string;
+  itemId: string;
+  assets: string;
+  colormap?: string;
+  rescale?: string;
+  assetBidx?: string;
+}
