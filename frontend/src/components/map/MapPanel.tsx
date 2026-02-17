@@ -15,7 +15,7 @@ const DEFAULT_ZOOM = 6;
 export function MapPanel() {
   const { mode } = useAppState();
   const { bboxBounds, searchedBounds, latestResponse } = useMap();
-  const { drawnBbox, setDrawnBbox, activeTileLayer } = useExplorer();
+  const { drawnBbox, setDrawnBbox, activeTileLayer, clearAll } = useExplorer();
   const [drawing, setDrawing] = useState(false);
 
   const collectionLabel = latestResponse?.stac_results?.collections?.join(", ") ?? "";
@@ -50,7 +50,7 @@ export function MapPanel() {
 
         {/* Explorer mode layers */}
         {drawnBounds && <BBoxLayer bounds={drawnBounds} color="#8b5cf6" label="Drawn area" />}
-        {activeTileLayer && <TileOverlay config={activeTileLayer} />}
+        {activeTileLayer && <TileOverlay config={activeTileLayer} bounds={drawnBounds} />}
 
         <DrawControl
           active={drawing}
@@ -62,9 +62,9 @@ export function MapPanel() {
         <MapUpdater bounds={mode === "explorer" ? drawnBounds : (bboxBounds ?? searchedBounds)} />
       </MapContainer>
 
-      {/* Draw button overlay (explorer mode only) */}
+      {/* Map overlay buttons (explorer mode only) */}
       {mode === "explorer" && (
-        <div className="absolute top-3 right-3 z-[1000]">
+        <div className="absolute top-3 right-3 z-[1000] pointer-events-none flex gap-2">
           <button
             onClick={() => {
               if (drawing) {
@@ -74,7 +74,7 @@ export function MapPanel() {
                 setDrawing(true);
               }
             }}
-            className={`px-3 py-1.5 text-sm rounded shadow-md transition-colors ${
+            className={`pointer-events-auto px-3 py-1.5 text-sm rounded shadow-md transition-colors ${
               drawing
                 ? "bg-purple-600 text-white"
                 : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-300"
@@ -82,6 +82,14 @@ export function MapPanel() {
           >
             {drawing ? "Cancel" : "Draw Area"}
           </button>
+          {(drawnBbox || activeTileLayer) && (
+            <button
+              onClick={clearAll}
+              className="pointer-events-auto px-3 py-1.5 text-sm rounded shadow-md bg-white text-red-600 hover:bg-red-50 border border-slate-300 transition-colors"
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
     </div>
