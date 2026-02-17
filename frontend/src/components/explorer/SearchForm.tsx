@@ -15,11 +15,11 @@ export function SearchForm() {
     if (drawnBbox) params.bbox = drawnBbox;
     if (selectedCollections.length > 0) params.collections = selectedCollections;
     if (startDate && endDate) {
-      params.datetime = `${startDate}/${endDate}`;
+      params.datetime = `${startDate}T00:00:00Z/${endDate}T23:59:59Z`;
     } else if (startDate) {
-      params.datetime = `${startDate}/..`;
+      params.datetime = `${startDate}T00:00:00Z/..`;
     } else if (endDate) {
-      params.datetime = `../${endDate}`;
+      params.datetime = `../${endDate}T23:59:59Z`;
     }
     search(params);
   };
