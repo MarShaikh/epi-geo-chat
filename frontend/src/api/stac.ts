@@ -46,3 +46,21 @@ export function buildTileUrl(
   if (opts?.assetBidx) params.push(`asset_bidx=${encodeURIComponent(opts.assetBidx)}`);
   return params.length > 0 ? `${base}&${params.join("&")}` : base;
 }
+
+/** Build a URL for a single bbox-clipped image from the tile proxy. */
+export function buildBboxImageUrl(
+  collectionId: string,
+  itemId: string,
+  bbox: number[],
+  assets: string,
+  opts?: { colormap?: string; rescale?: string; assetBidx?: string; width?: number; height?: number },
+): string {
+  const [minx, miny, maxx, maxy] = bbox;
+  const w = opts?.width ?? 1024;
+  const h = opts?.height ?? 1024;
+  let url = `${API_BASE}/tiles/${collectionId}/${itemId}/bbox/${minx},${miny},${maxx},${maxy}.png?assets=${encodeURIComponent(assets)}&width=${w}&height=${h}`;
+  if (opts?.colormap) url += `&colormap_name=${encodeURIComponent(opts.colormap)}`;
+  if (opts?.rescale) url += `&rescale=${encodeURIComponent(opts.rescale)}`;
+  if (opts?.assetBidx) url += `&asset_bidx=${encodeURIComponent(opts.assetBidx)}`;
+  return url;
+}
