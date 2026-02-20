@@ -1,27 +1,27 @@
-import { TileLayer } from "react-leaflet";
-import { buildTileUrl } from "../../api/stac";
+import { ImageOverlay } from "react-leaflet";
+import { buildBboxImageUrl } from "../../api/stac";
 import type { TileLayerConfig } from "../../types/api";
 import type { LatLngBoundsExpression } from "leaflet";
 
 interface Props {
   config: TileLayerConfig;
-  bounds?: LatLngBoundsExpression | null;
+  bounds: LatLngBoundsExpression;
+  bbox: number[];
 }
 
-export function TileOverlay({ config, bounds }: Props) {
-  const url = buildTileUrl(config.collectionId, config.itemId, config.assets, {
+export function TileOverlay({ config, bounds, bbox }: Props) {
+  const url = buildBboxImageUrl(config.collectionId, config.itemId, bbox, config.assets, {
     colormap: config.colormap,
     rescale: config.rescale,
     assetBidx: config.assetBidx,
   });
 
   return (
-    <TileLayer
-      key={`${config.collectionId}-${config.itemId}-${config.assets}-${config.colormap}`}
+    <ImageOverlay
+      key={`${config.collectionId}-${config.itemId}-${config.assets}-${config.colormap}-${bbox.join(",")}`}
       url={url}
+      bounds={bounds}
       opacity={0.7}
-      maxZoom={18}
-      bounds={bounds ?? undefined}
     />
   );
 }
