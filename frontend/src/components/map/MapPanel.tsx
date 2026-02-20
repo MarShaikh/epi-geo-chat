@@ -50,7 +50,9 @@ export function MapPanel() {
 
         {/* Explorer mode layers */}
         {drawnBounds && <BBoxLayer bounds={drawnBounds} color="#8b5cf6" label="Drawn area" />}
-        {activeTileLayer && <TileOverlay config={activeTileLayer} bounds={drawnBounds} />}
+        {activeTileLayer && drawnBounds && drawnBbox && (
+          <TileOverlay config={activeTileLayer} bounds={drawnBounds} bbox={drawnBbox} />
+        )}
 
         <DrawControl
           active={drawing}
