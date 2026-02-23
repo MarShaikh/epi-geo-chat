@@ -8,7 +8,7 @@ interface Props {
 
 export function ItemList({ features, selectedId, onSelect }: Props) {
   if (features.length === 0) {
-    return <p className="text-xs text-slate-400 italic py-2">No items found.</p>;
+    return <p className="text-xs text-[#666666] italic py-2">No items found.</p>;
   }
 
   return (
@@ -22,15 +22,16 @@ export function ItemList({ features, selectedId, onSelect }: Props) {
           <button
             key={f.id}
             onClick={() => onSelect(f)}
-            className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
+            className={`w-full text-left px-2 py-1.5 text-xs transition-colors border ${
               isSelected
-                ? "bg-purple-50 border border-purple-300"
-                : "bg-slate-50 hover:bg-slate-100 border border-transparent"
+                ? "border-[#0A0A0A] bg-[#0A0A0A]/5"
+                : "border-transparent hover:bg-[#0A0A0A]/5"
             }`}
+            style={{ borderWidth: '1px' }}
           >
-            <p className="font-medium text-slate-700 truncate">{f.id}</p>
-            <div className="flex gap-2 text-slate-500 mt-0.5">
-              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-medium">
+            <p className="text-[#0A0A0A] truncate">{f.id}</p>
+            <div className="flex gap-2 text-[#666666] mt-0.5">
+              <span className="px-1.5 py-0.5 border border-[#D9381E] text-[#D9381E] text-[10px]" style={{ borderWidth: '1px' }}>
                 {collection}
               </span>
               {dt && <span>{new Date(dt).toLocaleDateString()}</span>}

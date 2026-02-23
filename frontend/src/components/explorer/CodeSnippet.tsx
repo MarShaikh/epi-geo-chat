@@ -72,15 +72,16 @@ export function CodeSnippet({ bbox, datetime, collections }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-medium text-slate-600">Download Code (Python)</h4>
+        <h4 className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">Download Code (Python)</h4>
         <button
           onClick={handleCopy}
-          className="text-xs px-2 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors"
+          className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 border border-[#0A0A0A] text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#F2F2EC] transition-colors"
+          style={{ fontFamily: 'var(--font-mono)', borderWidth: '1px' }}
         >
-          {copied ? "Copied!" : "Copy"}
+          {copied ? "COPIED" : "COPY"}
         </button>
       </div>
-      <pre className="text-[11px] bg-slate-900 text-green-400 rounded p-3 overflow-auto max-h-64 leading-relaxed">
+      <pre className="text-[11px] bg-[#0A0A0A] text-green-400 p-3 overflow-auto max-h-64 leading-relaxed" style={{ fontFamily: 'var(--font-mono)' }}>
         {code}
       </pre>
     </div>

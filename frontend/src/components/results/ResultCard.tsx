@@ -6,17 +6,17 @@ interface Props {
 
 export function ResultCard({ item }: Props) {
   return (
-    <div className="border border-slate-200 rounded-md p-2 text-xs">
-      <p className="font-medium text-slate-800 truncate" title={item.id}>
+    <div className="border border-[#0A0A0A] p-2 text-xs" style={{ borderWidth: '1px' }}>
+      <p className="text-[#0A0A0A] truncate" title={item.id}>
         {item.id}
       </p>
       {item.datetime && item.datetime !== "Unspecified" && (
-        <p className="text-slate-500 mt-0.5">{item.datetime}</p>
+        <p className="text-[#666666] mt-0.5">{item.datetime}</p>
       )}
       {item.assets.length > 0 && (
         <div className="flex gap-1 mt-1 flex-wrap">
           {item.assets.map((asset) => (
-            <span key={asset} className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
+            <span key={asset} className="px-1.5 py-0.5 border border-[#0A0A0A] text-[#0A0A0A] text-[10px]" style={{ borderWidth: '1px' }}>
               {asset}
             </span>
           ))}

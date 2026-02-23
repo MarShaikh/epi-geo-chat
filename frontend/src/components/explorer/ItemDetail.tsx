@@ -40,17 +40,18 @@ export function ItemDetail({ item, onShowOnMap }: Props) {
   return (
     <div className="space-y-3">
       <div>
-        <h4 className="text-sm font-semibold text-slate-700 truncate">{item.id}</h4>
-        {dt && <p className="text-xs text-slate-500">{new Date(dt).toLocaleString()}</p>}
+        <h4 className="text-sm text-[#0A0A0A] truncate">{item.id}</h4>
+        {dt && <p className="text-[10px] text-[#666666] uppercase tracking-[0.1em]">{new Date(dt).toLocaleString()}</p>}
       </div>
 
       {/* Assets */}
       <div>
-        <label className="text-xs font-medium text-slate-600">Asset</label>
+        <label className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">Asset</label>
         <select
           value={selectedAsset}
           onChange={(e) => setSelectedAsset(e.target.value)}
-          className="w-full text-xs border border-slate-300 rounded px-2 py-1"
+          className="w-full text-xs border border-[#0A0A0A] bg-transparent px-2 py-1 mt-1 focus:outline-none"
+          style={{ fontFamily: 'var(--font-mono)', borderWidth: '1px' }}
         >
           {allAssetKeys.map((k) => {
             const tileable = isTileable(item.assets[k]);
@@ -65,11 +66,12 @@ export function ItemDetail({ item, onShowOnMap }: Props) {
 
       {/* Colormap */}
       <div>
-        <label className="text-xs font-medium text-slate-600">Colormap</label>
+        <label className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">Colormap</label>
         <select
           value={colormap}
           onChange={(e) => setColormap(e.target.value)}
-          className="w-full text-xs border border-slate-300 rounded px-2 py-1"
+          className="w-full text-xs border border-[#0A0A0A] bg-transparent px-2 py-1 mt-1 focus:outline-none"
+          style={{ fontFamily: 'var(--font-mono)', borderWidth: '1px' }}
         >
           {COLORMAP_OPTIONS.map((c) => (
             <option key={c} value={c}>{c}</option>
@@ -79,18 +81,19 @@ export function ItemDetail({ item, onShowOnMap }: Props) {
 
       {/* Rescale */}
       <div>
-        <label className="text-xs font-medium text-slate-600">Rescale (min,max)</label>
+        <label className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">Rescale (min,max)</label>
         <input
           type="text"
           value={rescale}
           onChange={(e) => setRescale(e.target.value)}
           placeholder="0,50"
-          className="w-full text-xs border border-slate-300 rounded px-2 py-1"
+          className="w-full text-xs border border-[#0A0A0A] bg-transparent px-2 py-1 mt-1 focus:outline-none"
+          style={{ fontFamily: 'var(--font-mono)', borderWidth: '1px' }}
         />
       </div>
 
       {!selectedIsTileable && (
-        <p className="text-xs text-amber-600 bg-amber-50 rounded p-2">
+        <p className="text-xs text-[#D9381E] border border-[#D9381E] p-2" style={{ borderWidth: '1px' }}>
           This asset format (e.g. HDF) can't be rendered on the map. Select a GeoTIFF (COG) asset instead, or use the download code snippet.
         </p>
       )}
@@ -106,16 +109,17 @@ export function ItemDetail({ item, onShowOnMap }: Props) {
           })
         }
         disabled={!selectedIsTileable}
-        className="w-full py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full py-1.5 text-[10px] uppercase tracking-[0.15em] text-[#F2F2EC] bg-[#0A0A0A] hover:bg-[#D9381E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        style={{ fontFamily: 'var(--font-mono)' }}
       >
-        View on Map
+        VIEW ON MAP
       </button>
 
       {/* Properties */}
       <details className="text-xs">
-        <summary className="cursor-pointer text-slate-600 font-medium">Properties</summary>
-        <div className="mt-1 bg-slate-50 rounded p-2 max-h-40 overflow-auto">
-          <pre className="whitespace-pre-wrap break-all text-[11px] text-slate-600">
+        <summary className="cursor-pointer text-[#666666] uppercase tracking-[0.1em] text-[10px]">Properties</summary>
+        <div className="mt-1 bg-[#0A0A0A] p-2 max-h-40 overflow-auto">
+          <pre className="whitespace-pre-wrap break-all text-[11px] text-[#F2F2EC]" style={{ fontFamily: 'var(--font-mono)' }}>
             {JSON.stringify(item.properties, null, 2)}
           </pre>
         </div>

@@ -34,57 +34,61 @@ export function SearchForm() {
 
       {/* Bounding box display */}
       <div>
-        <label className="text-xs font-medium text-slate-600">Bounding Box</label>
+        <label className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">Bounding Box</label>
         {drawnBbox ? (
-          <p className="text-xs text-slate-700 bg-slate-50 rounded px-2 py-1 font-mono">
+          <p className="text-xs text-[#0A0A0A] mt-1" style={{ fontFamily: 'var(--font-mono)' }}>
             {drawnBbox.map((n) => n.toFixed(4)).join(", ")}
           </p>
         ) : (
-          <p className="text-xs text-slate-400 italic">Draw an area on the map</p>
+          <p className="text-xs text-[#666666] italic mt-1">Draw an area on the map</p>
         )}
       </div>
 
       {/* Date range */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs font-medium text-slate-600">Start Date</label>
+          <label className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">Start Date</label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full text-xs border border-slate-300 rounded px-2 py-1"
+            className="w-full text-xs border border-[#0A0A0A] bg-transparent px-2 py-1 mt-1 focus:outline-none"
+            style={{ fontFamily: 'var(--font-mono)', borderWidth: '1px' }}
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-slate-600">End Date</label>
+          <label className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">End Date</label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full text-xs border border-slate-300 rounded px-2 py-1"
+            className="w-full text-xs border border-[#0A0A0A] bg-transparent px-2 py-1 mt-1 focus:outline-none"
+            style={{ fontFamily: 'var(--font-mono)', borderWidth: '1px' }}
           />
         </div>
       </div>
 
       {/* Limit */}
       <div>
-        <label className="text-xs font-medium text-slate-600">Max Results</label>
+        <label className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">Max Results</label>
         <input
           type="number"
           value={limit}
           min={1}
           max={100}
           onChange={(e) => setLimit(Number(e.target.value))}
-          className="w-full text-xs border border-slate-300 rounded px-2 py-1"
+          className="w-full text-xs border border-[#0A0A0A] bg-transparent px-2 py-1 mt-1 focus:outline-none"
+          style={{ fontFamily: 'var(--font-mono)', borderWidth: '1px' }}
         />
       </div>
 
       <button
         onClick={handleSearch}
         disabled={explorerLoading}
-        className="w-full py-1.5 text-sm font-medium text-white bg-purple-600 rounded hover:bg-purple-700 disabled:opacity-50 transition-colors"
+        className="w-full py-1.5 text-[10px] uppercase tracking-[0.15em] text-[#F2F2EC] bg-[#0A0A0A] hover:bg-[#D9381E] disabled:opacity-50 transition-colors"
+        style={{ fontFamily: 'var(--font-mono)' }}
       >
-        {explorerLoading ? "Searching..." : "Search"}
+        {explorerLoading ? "SEARCHING..." : "SEARCH"}
       </button>
     </div>
   );

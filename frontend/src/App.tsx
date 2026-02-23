@@ -9,7 +9,7 @@ import { ExplorerPanel } from "./components/explorer/ExplorerPanel";
 function App() {
   return (
     <AppProvider>
-      <div className="flex flex-col h-full bg-white">
+      <div className="flex flex-col h-full bg-[#F2F2EC]">
         <Header />
         <AppLayout
           chat={<ChatPanel />}

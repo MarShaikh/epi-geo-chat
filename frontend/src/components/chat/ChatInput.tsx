@@ -18,21 +18,23 @@ export function ChatInput({ onSend }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 p-3 border-t border-slate-200 bg-white">
+    <form onSubmit={handleSubmit} className="flex gap-0 border-t border-[#0A0A0A] bg-[#F2F2EC]" style={{ borderWidth: '1.5px' }}>
       <input
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="Ask about geospatial data..."
         disabled={isStreaming}
-        className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100"
+        className="flex-1 px-3 py-2.5 bg-transparent text-sm focus:outline-none disabled:opacity-50"
+        style={{ fontFamily: 'var(--font-mono)' }}
       />
       <button
         type="submit"
         disabled={isStreaming || !input.trim()}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+        className="px-4 py-2.5 bg-[#0A0A0A] text-[#F2F2EC] text-[10px] uppercase tracking-[0.15em] hover:bg-[#D9381E] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        style={{ fontFamily: 'var(--font-mono)' }}
       >
-        {isStreaming ? "..." : "Send"}
+        {isStreaming ? "..." : "SEND"}
       </button>
     </form>
   );

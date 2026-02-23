@@ -7,8 +7,12 @@ export function ResultsPanel() {
 
   if (!latestResponse) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400 text-sm p-4 text-center">
-        <p>Search results will appear here after you submit a query.</p>
+      <div className="flex items-center justify-center h-full p-6 text-center">
+        <div className="border border-dashed border-[#0A0A0A] px-6 py-8" style={{ borderWidth: '1.5px' }}>
+          <p className="text-xs uppercase tracking-[0.15em] text-[#666666]">
+            Search results will appear here after you submit a query.
+          </p>
+        </div>
       </div>
     );
   }
@@ -19,7 +23,7 @@ export function ResultsPanel() {
     <div className="p-3 space-y-4 text-sm">
       {/* Query summary */}
       <section>
-        <h3 className="font-semibold text-slate-700 mb-1">Query</h3>
+        <h3 className="text-lg mb-1 border-b border-[#0A0A0A] pb-1" style={{ fontFamily: 'var(--font-serif)', borderWidth: '1px' }}>Query</h3>
         <MetadataTable
           data={{
             intent: parsed_query.intent,
@@ -34,7 +38,7 @@ export function ResultsPanel() {
       {/* Geocoding */}
       {geocoding.bbox && (
         <section>
-          <h3 className="font-semibold text-slate-700 mb-1">Geocoding</h3>
+          <h3 className="text-lg mb-1 border-b border-[#0A0A0A] pb-1" style={{ fontFamily: 'var(--font-serif)', borderWidth: '1px' }}>Geocoding</h3>
           <MetadataTable
             data={{
               bbox: geocoding.bbox.map((n) => n.toFixed(4)).join(", "),
@@ -47,10 +51,10 @@ export function ResultsPanel() {
 
       {/* STAC Results */}
       <section>
-        <h3 className="font-semibold text-slate-700 mb-1">
-          STAC Results
+        <h3 className="text-lg mb-1 border-b border-[#0A0A0A] pb-1" style={{ fontFamily: 'var(--font-serif)', borderWidth: '1px' }}>
+          Analysis Results
           {stac_results.count != null && (
-            <span className="ml-2 text-xs font-normal text-slate-500">
+            <span className="ml-2 text-[10px] uppercase tracking-[0.1em] text-[#666666]" style={{ fontFamily: 'var(--font-mono)' }}>
               ({stac_results.count} items)
             </span>
           )}
@@ -62,7 +66,8 @@ export function ResultsPanel() {
             {stac_results.collections.map((c) => (
               <span
                 key={c}
-                className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium"
+                className="px-2 py-0.5 border border-[#D9381E] text-[#D9381E] text-[10px] uppercase tracking-[0.05em]"
+                style={{ borderWidth: '1px' }}
               >
                 {c}
               </span>
@@ -80,7 +85,7 @@ export function ResultsPanel() {
         {/* Items */}
         {stac_results.items && stac_results.items.length > 0 && (
           <div className="mt-2 space-y-1.5">
-            <p className="text-xs text-slate-500">
+            <p className="text-[10px] uppercase tracking-[0.1em] text-[#666666]">
               Showing {stac_results.items.length} of {stac_results.count ?? "?"} items
             </p>
             {stac_results.items.map((item) => (

@@ -9,12 +9,12 @@ interface Props {
 export function CollectionPicker({ collections, selected, onChange }: Props) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-slate-600">Collections</label>
+      <label className="text-[10px] uppercase tracking-[0.15em] text-[#666666]">Collections</label>
       <div className="space-y-1">
         {collections.map((c) => (
           <label
             key={c.id}
-            className="flex items-start gap-2 p-1.5 rounded hover:bg-slate-50 cursor-pointer"
+            className="flex items-start gap-2 p-1.5 hover:bg-[#0A0A0A]/5 cursor-pointer"
           >
             <input
               type="checkbox"
@@ -29,9 +29,9 @@ export function CollectionPicker({ collections, selected, onChange }: Props) {
               className="mt-0.5"
             />
             <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-700 truncate">{c.title ?? c.id}</p>
+              <p className="text-xs text-[#0A0A0A] truncate">{c.title ?? c.id}</p>
               {c.description && (
-                <p className="text-xs text-slate-500 line-clamp-2">{c.description}</p>
+                <p className="text-[10px] text-[#666666] line-clamp-2">{c.description}</p>
               )}
             </div>
           </label>
