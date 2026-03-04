@@ -5,32 +5,35 @@ Each function wraps an agent with observability tracing and handles
 the execution logic for a specific step in the workflow pipeline.
 """
 
+import asyncio
 from typing import Any, List, Optional
 
-from src.agents.query_parser import create_query_parser_agent, ParsedQuery
-from src.agents.geocoding_temporal import create_geocoding_agent, GeocodingResult
-from src.agents.stac_coordinator import create_stac_coordinator_agent, STACSearchResult
+from src.agents.code_generator import GeneratedCode, create_code_generator_agent
+from src.agents.geocoding_temporal import GeocodingResult, create_geocoding_agent
+from src.agents.query_parser import ParsedQuery, create_query_parser_agent
 from src.agents.response_synthesizer import create_response_synthesizer_agent
+from src.agents.stac_coordinator import STACSearchResult, create_stac_coordinator_agent
+from src.code_executor.models import AnalysisResult
 from src.utils.observability import setup_telemetry, traced_agent
 
 setup_telemetry()
 
 
 @traced_agent(
-    "agent_1_query_parser", capture_args=["user_query"], capture_output="parsed_query"
+    "query_parser", capture_args=["user_query"], capture_output="parsed_query"
 )
 async def run_query_parser(*, user_query: str) -> ParsedQuery:
     """Parse user query to extract intent, keywords, location, and datetime."""
-    print(f"\n[Agent 1] Parsing user query: '{user_query}'...")
+    print(f"\n[Query Parser] Parsing user query: '{user_query}'...")
     query_parser = create_query_parser_agent()
     parsed_response = await query_parser.run(
         user_query, options={"response_format": ParsedQuery}
     )
     parsed_query = parsed_response.value
 
-    assert isinstance(
-        parsed_query, ParsedQuery
-    ), "Expected ParsedQuery from query parser"
+    assert isinstance(parsed_query, ParsedQuery), (
+        "Expected ParsedQuery from query parser"
+    )
 
     print(f"  Intent: {parsed_query.intent}")
     if parsed_query.metadata_sub_intent:
@@ -43,7 +46,7 @@ async def run_query_parser(*, user_query: str) -> ParsedQuery:
 
 
 @traced_agent(
-    "agent_2_geocoding",
+    "geocoding",
     capture_args=["location", "datetime"],
     capture_output="geocoding_result",
 )
@@ -51,7 +54,7 @@ async def run_geocoding_agent(
     *, location: Optional[str], datetime: Optional[str]
 ) -> GeocodingResult:
     """Resolve location to bounding box and datetime to ISO 8601 format."""
-    print(f"\n[Agent 2] Resolving location and datetime...")
+    print(f"\n[Geocoding] Resolving location and datetime...")
     geocoding_agent = create_geocoding_agent()
     geocoding_prompt = f"""
     Resolve the following location and datetime information:
@@ -66,9 +69,9 @@ async def run_geocoding_agent(
     )
     geocoding_result = geocoding_response.value
 
-    assert isinstance(
-        geocoding_result, GeocodingResult
-    ), "Expected GeocodingResult from geocoding agent"
+    assert isinstance(geocoding_result, GeocodingResult), (
+        "Expected GeocodingResult from geocoding agent"
+    )
 
     print(f"  BBox: {geocoding_result.bbox}")
     print(f"  Resolved Datetime: {geocoding_result.datetime}")
@@ -78,7 +81,7 @@ async def run_geocoding_agent(
 
 
 @traced_agent(
-    "agent_3_stac_coordinator",
+    "stac_coordinator",
     capture_args=["user_query", "intent", "collections", "bbox", "datetime"],
     capture_output="stac_result",
 )
@@ -92,57 +95,70 @@ async def run_stac_agent(
     datetime: Optional[str],
 ) -> STACSearchResult:
     """Search STAC catalogs based on intent and parameters."""
-    print(f"\n[Agent 3] Running STAC Coordinator...")
+    print(f"\n[STAC Coordinator] Running STAC search...")
     stac_agent = create_stac_coordinator_agent()
 
-    # Build prompt based on intent
-    if intent == "data_search":
+    # Build prompt — each branch tells the agent exactly which ONE tool to call
+    if intent in ("data_search", "analysis"):
         stac_prompt = f"""
-        Search the STAC catalogs for actual data items:
-        - Collections: {collections if collections else 'all'}
-        - BBox: {bbox}
-        - Datetime: {datetime}
+        Intent: {intent}
+        Collections: {collections if collections else "all"}
+        BBox: {bbox}
+        Datetime: {datetime}
 
-        Use the search_and_summarize() function tool to find items.
+        Call search_and_summarize() ONCE with these parameters, then return the result.
         """
     elif intent == "metadata_query":
-        stac_prompt = f"User query: {user_query}\n\n"
-
         if metadata_sub_intent == "list_collections":
-            stac_prompt += "Use list_collections() to show all available collections."
+            stac_prompt = "Call list_collections() ONCE, then return the result."
         elif metadata_sub_intent == "collection_details":
             if collections:
-                stac_prompt += f"Get details for these collections: {collections}\n"
-                stac_prompt += "Use get_collection_details() for each collection ID."
-            else:
-                stac_prompt += (
-                    "Use list_collections() since no specific data type was mentioned."
+                # Only ask for the first collection to enforce single tool call
+                stac_prompt = (
+                    f"Call get_collection_details('{collections[0]}') ONCE, "
+                    "then return the result."
                 )
-        elif metadata_sub_intent == "count_items":
-            if collections:
-                stac_prompt += f"Count items in these collections: {collections}\n"
             else:
-                stac_prompt += "Count items across all collections.\n"
-            if bbox:
-                stac_prompt += f"BBox: {bbox}\n"
-            if datetime:
-                stac_prompt += f"Datetime: {datetime}\n"
-            stac_prompt += (
-                "Use search_and_summarize() with limit=1000 to get accurate counts."
-            )
+                stac_prompt = "Call list_collections() ONCE, then return the result."
+        elif metadata_sub_intent == "count_items":
+            stac_prompt = f"""
+            Collections: {collections if collections else "all"}
+            BBox: {bbox}
+            Datetime: {datetime}
+
+            Call search_and_summarize() ONCE with limit=1000, then return the result.
+            """
         else:
-            stac_prompt += "Use the appropriate function to answer the user's question."
+            stac_prompt = (
+                f"User query: {user_query}\n\n"
+                "Pick the single most appropriate tool, call it ONCE, then return."
+            )
     else:
-        stac_prompt = f"User query: {user_query}\n\nProvide relevant information."
+        stac_prompt = (
+            f"User query: {user_query}\n\n"
+            "Pick the single most appropriate tool, call it ONCE, then return."
+        )
 
-    stac_response = await stac_agent.run(
-        stac_prompt, options={"response_format": STACSearchResult}
+    try:
+        stac_response = await asyncio.wait_for(
+            stac_agent.run(stac_prompt, options={"response_format": STACSearchResult}),
+            timeout=30,
+        )
+        stac_search_result = stac_response.value
+    except asyncio.TimeoutError:
+        print("  [STAC Coordinator] Timed out after 30s — returning empty result")
+        return STACSearchResult(
+            count=0,
+            collections=collections,
+            date_range=datetime or "Unknown",
+            items=[],
+            bbox_searched=bbox,
+            description="STAC search timed out",
+        )
+
+    assert isinstance(stac_search_result, STACSearchResult), (
+        "Expected STACSearchResult from STAC agent"
     )
-    stac_search_result = stac_response.value
-
-    assert isinstance(
-        stac_search_result, STACSearchResult
-    ), "Expected STACSearchResult from STAC agent"
 
     print(f"  Found {stac_search_result.count} items")
     print(f"  Date range: {stac_search_result.date_range}")
@@ -152,8 +168,15 @@ async def run_stac_agent(
 
 
 @traced_agent(
-    "agent_4_response_synthesizer",
-    capture_args=["user_query", "intent", "metadata_sub_intent", "item_count", "date_range", "collections"],
+    "response_synthesizer",
+    capture_args=[
+        "user_query",
+        "intent",
+        "metadata_sub_intent",
+        "item_count",
+        "date_range",
+        "collections",
+    ],
     capture_output="final_response",
 )
 async def run_response_synthesizer(
@@ -165,9 +188,10 @@ async def run_response_synthesizer(
     date_range: Optional[str],
     collections: List[str],
     sample_items: List[Any],
+    analysis: Optional[AnalysisResult] = None,
 ) -> str:
     """Synthesize a final response for the user based on search results."""
-    print(f"\n[Agent 4] Synthesizing final response...")
+    print(f"\n[Response Synthesizer] Synthesizing final response...")
     synthesizer = create_response_synthesizer_agent()
     synthesizer_prompt = f"""
     User asked: "{user_query}"
@@ -179,10 +203,78 @@ async def run_response_synthesizer(
     - Date Range: {date_range}
     - Collections: {collections}
     - Sample Items: {sample_items[:10]}
-
-    Generate a helpful response to the user query based on these results. 
     """
+
+    if analysis:
+        synthesizer_prompt += f"""
+    Analysis execution results:
+    - Description: {analysis.description}
+    - Artifacts generated: {len(analysis.artifacts)} ({', '.join(a.filename for a in analysis.artifacts)})
+    - Execution time: {analysis.execution_time_ms}ms
+    - Success: {analysis.error is None}
+    {"- Error: " + analysis.error if analysis.error else ""}
+
+    Summarize the analysis results and mention the generated artifacts.
+    """
+    else:
+        synthesizer_prompt += """
+    Generate a helpful response to the user query based on these results.
+    """
+
     final_response = await synthesizer.run(synthesizer_prompt)
     print(f"  Response Generated.")
 
     return final_response.text
+
+
+@traced_agent(
+    "code_generator",
+    capture_args=["user_query"],
+    capture_output="generated_code",
+)
+async def run_code_generator(
+    *,
+    user_query: str,
+    stac_result: STACSearchResult,
+    geocoding_result: GeocodingResult,
+) -> GeneratedCode:
+    """Generate Python analysis code based on STAC search results.
+
+    Note: STACSearchResult.items only contains summary info (id, datetime, asset keys).
+    The full items with signed asset URLs are fetched separately in the workflow
+    and passed to the Docker sandbox via data.json.
+    """
+    print(f"\n[Code Generator] Generating analysis code...")
+    code_gen = create_code_generator_agent()
+
+    prompt = f"""
+    User query: "{user_query}"
+
+    Available data:
+    - Collections: {stac_result.collections}
+    - Item count: {stac_result.count}
+    - Date range: {stac_result.date_range}
+    - BBox searched: {geocoding_result.bbox}
+    - Datetime: {geocoding_result.datetime}
+    - Sample items (id, datetime, asset keys): {
+        [
+            {"id": item.id, "datetime": item.datetime, "assets": item.assets}
+            for item in (stac_result.items or [])[:10]
+        ]
+    }
+
+    Generate a Python script that answers the user's analysis query using this data.
+    The script will receive the full item list (with signed asset URLs) in /workspace/input/data.json.
+    """
+
+    response = await code_gen.run(prompt, options={"response_format": GeneratedCode})
+    generated = response.value
+
+    assert isinstance(generated, GeneratedCode), (
+        "Expected GeneratedCode from code generator"
+    )
+
+    print(f"  Description: {generated.description}")
+    print(f"  Expected outputs: {generated.expected_output}")
+
+    return generated

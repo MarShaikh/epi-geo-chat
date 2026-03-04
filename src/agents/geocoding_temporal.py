@@ -2,6 +2,7 @@ from typing import Optional, List, Annotated, Dict
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 from src.stac.geocoding import GeoCodingService
+from src.utils.datetime_parser import format_datetime
 from datetime import datetime
 
 
@@ -72,18 +73,21 @@ def create_geocoding_agent():
     - Set bbox to None
     - Set location_source to None
 
-    For temporal references, convert:
-    - "last month" -> calculate last month's date range (YYYY-MM-DD/YYYY-MM-DD) relative to {current_date}
-    - "yesterday" -> calculate yesterday's date (YYYY-MM-DD) relative to {current_date}
-    - "last week" or "last 7 days" -> calculate last 7 days date range (YYYY-MM-DD/YYYY-MM-DD) relative to {current_date}
-    - "2024" -> 2024-01-01T00:00:00Z/2024-01-31T23:59:59Z
-    - "March 2023" -> "2023-03-01T00:00:00Z/2023-03-31T23:59:59Z"
-    - If already in ISO format, return as is
+    For temporal references:
+    - First resolve the meaning to a date range (e.g. "last month" → "2026-01-01/2026-01-31", relative to {current_date})
+    - Then ALWAYS call format_datetime() with the resolved date string to ensure proper ISO 8601 formatting with T separators
+    - Examples of what to pass to format_datetime():
+      - "2024-01-01/2024-12-31" (for "2024")
+      - "2023-03-01/2023-03-31" (for "March 2023")
+      - "2026-01-01/2026-01-31" (for "last month")
+    - If datetime is None or not provided, set datetime to None
+
+    IMPORTANT: You MUST call format_datetime() for every non-null datetime before returning.
 
     Return the bbox, datetime, and location_source in the structured format.
     """
     agent_client = create_agent_client()
     geocoding_agent = agent_client.as_agent(
-        name="GeocodingTemporalAgent", instructions=instructions, tools=[geocode]
+        name="GeocodingTemporalAgent", instructions=instructions, tools=[geocode, format_datetime]
     )
     return geocoding_agent

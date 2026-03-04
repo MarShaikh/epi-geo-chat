@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Annotated, Any
 from pydantic import BaseModel, Field
 from src.agents.agent_config import create_agent_client
 from src.stac.catalog_client import GeoCatalogClient
+from src.utils.datetime_parser import format_datetime as _format_datetime
 
 
 class STACItem(BaseModel):
@@ -169,6 +170,10 @@ def search_and_summarize(
 
     catalog_client = GeoCatalogClient()
 
+    # Ensure datetime has T separators required by GeoCatalog API
+    if datetime:
+        datetime = _format_datetime(datetime)
+
     # if no collections specified, search all
     if not collections:
         all_collections_resp = catalog_client.list_collections()
@@ -239,29 +244,33 @@ def create_stac_coordinator_agent():
     """
 
     instructions = """
-    You are a STAC (SpatioTemporal Asset Catalog) coordinator agent. You use tools responsibly to answer user queries about geospatial data. 
-    Use the tools based on the user's intent and sub-intent. Try to avoid unnecessary tool calls. 
-    DO NOT call any tool if the user's question does not require it.
-    DO NOT call the same tool multiple times for the same question.
-    
-    Your responsibilities:
-    1. **For data search queries** (user wants actual data items):
-       - Use search_and_summarize(collections, bbox, datetime) to find items
-       - Return structured results with count, date range, and sample item IDs
-    2. **For metadata queries** (user asks what's available):
-       a) Sub-intent: 'list_collections'
-          Question: "What collections do we have?" / "List all datasets"
-          Task: Use list_collections() function to get all collections
-       b) Sub-intent: 'collection_details'
-          Question: "What do you know about [data type]?" / "Tell me about [collection]"
-          Task: - Use get_collection_details(collection_id) function for specific collection info
-                - You'll receive collection_id from the context
-       c) "What data is available for [location] in [time]?"
-          - Use search_and_summarize() function with limit=1000 to get accurate counts
-    
-    Always use the appropriate function tool based on the user's question.
-    Return the results in a clear, structured format.
+    You are a STAC (SpatioTemporal Asset Catalog) coordinator agent.
 
+    CRITICAL RULES:
+    - Make EXACTLY ONE tool call per request, then return your structured response immediately.
+    - NEVER call the same tool twice. NEVER call multiple tools.
+    - After receiving a tool result, format it into the response schema and STOP.
+
+    TOOL SELECTION (pick ONE based on intent):
+
+    Intent: "data_search" or "analysis"
+      → Call search_and_summarize(collections, bbox, datetime) ONCE
+      → Return the result as structured output
+
+    Intent: "metadata_query"
+      Sub-intent "list_collections":
+        → Call list_collections() ONCE
+      Sub-intent "collection_details":
+        → Call get_collection_details(collection_id) ONCE
+      Sub-intent "count_items":
+        → Call search_and_summarize() with limit=1000 ONCE
+
+    FAILURE CONDITIONS (stop and return immediately):
+    - Tool returns 0 items → set count=0, return the result
+    - Tool returns an error → set count=0, include error in description, return
+    - No collections provided → set count=0, return
+
+    After your single tool call completes, return your structured response. Do NOT retry, do NOT call another tool.
     """
 
     agent_client = create_agent_client()

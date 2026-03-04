@@ -1,6 +1,7 @@
 import { useAppState } from "../../context/AppContext";
 import { MetadataTable } from "./MetadataTable";
 import { ResultCard } from "./ResultCard";
+import { AnalysisPanel } from "../analysis/AnalysisPanel";
 
 export function ResultsPanel() {
   const { latestResponse } = useAppState();
@@ -94,6 +95,11 @@ export function ResultsPanel() {
           </div>
         )}
       </section>
+
+      {/* Analysis (code execution results) */}
+      {latestResponse.analysis && (
+        <AnalysisPanel analysis={latestResponse.analysis} />
+      )}
     </div>
   );
 }

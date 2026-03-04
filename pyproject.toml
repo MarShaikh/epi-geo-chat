@@ -40,6 +40,9 @@ dependencies = [
     # HTTP & Utilities
     "httpx>=0.25.0",
     "python-dotenv>=1.0.0",
+
+    # Code Execution
+    "docker>=7.0.0",
 ]
 
 [project.optional-dependencies]

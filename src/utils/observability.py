@@ -1,11 +1,11 @@
 # Adding observability using Azure Monitor OpenTelemetry Exporter
-import dotenv
-import os
-import json
 import asyncio
+import json
+import os
 from functools import wraps
 from typing import List
 
+import dotenv
 from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider

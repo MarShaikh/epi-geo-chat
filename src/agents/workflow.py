@@ -2,7 +2,7 @@
 Multi-agent workflow orchestration for geospatial data querying.
 """
 
-from typing import AsyncGenerator, Dict, Any, List
+from typing import AsyncGenerator, Dict, Any, List, Optional
 
 from opentelemetry.trace import SpanKind, get_current_span
 from opentelemetry.trace.span import format_trace_id
@@ -15,9 +15,19 @@ from src.agents.agent_runners import (
     run_geocoding_agent,
     run_stac_agent,
     run_response_synthesizer,
+    run_code_generator,
 )
 from src.rag.collection_resolver import resolve_collections_by_keywords
+from src.stac.catalog_client import GeoCatalogClient
+from src.code_executor.validator import CodeValidator
+from src.code_executor.sandbox import DockerSandbox
+from src.code_executor.artifact_store import ArtifactStore
+from src.code_executor.models import AnalysisResult, AnalysisArtifact
 from src.utils.observability import traced
+
+# Shared instances for code execution
+_artifact_store = ArtifactStore()
+_code_validator = CodeValidator()
 
 
 class WorkflowResult:
@@ -30,12 +40,14 @@ class WorkflowResult:
         geocoding_result: GeocodingResult,
         stac_search_result: STACSearchResult,
         final_response: str,
+        analysis: Optional[AnalysisResult] = None,
     ):
         self.user_query = user_query
         self.parsed_query = parsed_query
         self.geocoding_result = geocoding_result
         self.stac_search_result = stac_search_result
         self.final_response = final_response
+        self.analysis = analysis
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert the workflow result into a dictionary for serialization."""
@@ -53,6 +65,9 @@ class WorkflowResult:
                 else None
             ),
             "final_response": self.final_response,
+            "analysis": (
+                self.analysis.model_dump() if self.analysis else None
+            ),
         }
 
 
@@ -79,6 +94,7 @@ class AgentWorkflow:
             "geocoding": run_geocoding_agent,
             "stac_coordinator": run_stac_agent,
             "response_synthesizer": run_response_synthesizer,
+            "code_generator": run_code_generator,
         }
 
     @traced("AgentWorkflow.run", kind=SpanKind.CLIENT)
@@ -88,10 +104,11 @@ class AgentWorkflow:
 
         Chains agents sequentially, passing validated Pydantic models between
         each step for type safety:
-        1. Parses the query (Agent 1)
-        2. Routes based on intent (data_search vs metadata_query)
-        3. Executes appropriate pipeline
-        4. Returns unified WorkflowResult
+        - Parses the query
+        - Resolves location and datetime
+        - Searches STAC catalogs
+        - Runs code execution (analysis intent only)
+        - Synthesizes final response (always last)
 
         Args:
             user_query: Natural language query from user
@@ -103,7 +120,7 @@ class AgentWorkflow:
         current_span = get_current_span()
         print(f"Trace ID: {format_trace_id(current_span.get_span_context().trace_id)}")
 
-        # Agent 1: Query Parsing
+        # Query Parsing
         parsed_query = await self.agents["query_parser"](user_query=user_query)
 
         # Resolve collection if keywords are provided using RAG
@@ -113,13 +130,14 @@ class AgentWorkflow:
                 data_type_keywords=parsed_query.data_type_keywords,
                 limit=len(parsed_query.data_type_keywords),
             )
+
             print(f"[RAG] Resolved Collections: {collections}")
 
-        # Agent 2: Geocoding & Temporal Resolution
+        # Geocoding & Temporal Resolution
         if (
             parsed_query.location
             or parsed_query.datetime
-            or parsed_query.intent == "data_search"
+            or parsed_query.intent in ("data_search", "analysis")
         ):
             geocoding_result = await self.agents["geocoding"](
                 location=parsed_query.location, datetime=parsed_query.datetime
@@ -129,8 +147,8 @@ class AgentWorkflow:
                 bbox=None, datetime=None, location_source="not_applicable"
             )
 
-        if parsed_query.intent not in ["data_search", "metadata_query"]:
-            print(f"\n[Agent 3] Skipping STAC search for intent: {parsed_query.intent}")
+        if parsed_query.intent not in ["data_search", "metadata_query", "analysis"]:
+            print(f"\n[STAC Coordinator] Skipping STAC search for intent: {parsed_query.intent}")
             stac_search_result = STACSearchResult(
                 count=0,
                 collections=collections,
@@ -142,7 +160,7 @@ class AgentWorkflow:
                 license=None,
             )
         else:
-            # Agent 3: STAC Coordinator
+            # STAC Coordinator
             stac_search_result = await self.agents["stac_coordinator"](
                 user_query=user_query,
                 intent=parsed_query.intent,
@@ -152,7 +170,21 @@ class AgentWorkflow:
                 datetime=geocoding_result.datetime,
             )
 
-        # Agent 4: Response Synthesis
+        # Code Generation & Execution (analysis intent only — runs before synthesis)
+        analysis = None
+        if (
+            parsed_query.intent == "analysis"
+            and stac_search_result.count
+            and stac_search_result.count > 0
+        ):
+            analysis = await self._run_code_execution(
+                user_query=user_query,
+                stac_search_result=stac_search_result,
+                geocoding_result=geocoding_result,
+                collections=collections,
+            )
+
+        # Response Synthesis
         final_response = await self.agents["response_synthesizer"](
             user_query=user_query,
             intent=parsed_query.intent,
@@ -161,6 +193,7 @@ class AgentWorkflow:
             date_range=stac_search_result.date_range,
             collections=stac_search_result.collections,
             sample_items=stac_search_result.items or [],
+            analysis=analysis,
         )
 
         print(f"\n{'='*60}")
@@ -174,8 +207,98 @@ class AgentWorkflow:
             geocoding_result=geocoding_result,
             stac_search_result=stac_search_result,
             final_response=final_response,
+            analysis=analysis,
         )
 
+    async def _run_code_execution(
+        self,
+        user_query: str,
+        stac_search_result: STACSearchResult,
+        geocoding_result: GeocodingResult,
+        collections: List[str],
+    ) -> AnalysisResult:
+        """Run step 5: code generation, validation, and sandboxed execution.
+
+        Re-fetches full STAC items (with signed asset URLs) from GeoCatalog
+        since STACSearchResult.items only contains summaries.
+        """
+        import asyncio
+
+        # 5a: Generate code
+        generated = await self.agents["code_generator"](
+            user_query=user_query,
+            stac_result=stac_search_result,
+            geocoding_result=geocoding_result,
+        )
+
+        # 5b: Validate code
+        validation = _code_validator.validate(generated.code)
+        if not validation.is_safe:
+            print(f"[Code Executor] Code validation failed: {validation.violations}")
+            return AnalysisResult(
+                code=generated.code,
+                description=generated.description,
+                error=f"Code validation failed: {'; '.join(validation.violations)}",
+            )
+
+        # 5c: Re-fetch full items with signed asset URLs from GeoCatalog
+        print("[Code Executor] Fetching full STAC items with signed asset URLs...")
+        catalog_client = GeoCatalogClient()
+        raw_results = await asyncio.to_thread(
+            catalog_client.search,
+            bbox=geocoding_result.bbox,
+            datetime=geocoding_result.datetime,
+            collections=collections,
+            limit=stac_search_result.count or 20,
+        )
+        full_items = raw_results.get("features", [])
+
+        # 5d: Build input data for sandbox
+        input_data = {
+            "user_query": user_query,
+            "bbox": geocoding_result.bbox,
+            "datetime": geocoding_result.datetime,
+            "collections": collections,
+            "items": [
+                {
+                    "id": item["id"],
+                    "datetime": item.get("properties", {}).get("datetime"),
+                    "assets": {
+                        k: {"href": v.get("href", ""), "type": v.get("type", "")}
+                        for k, v in item.get("assets", {}).items()
+                    },
+                    "bbox": item.get("bbox"),
+                    "properties": item.get("properties", {}),
+                }
+                for item in full_items
+            ],
+        }
+
+        # 5e: Execute in Docker sandbox
+        print(f"[Code Executor] Executing code in sandbox ({len(full_items)} items)...")
+        sandbox = DockerSandbox(_artifact_store)
+        exec_result = await sandbox.execute(generated.code, input_data)
+
+        print(f"[Code Executor] Execution {'succeeded' if exec_result.success else 'failed'} "
+              f"in {exec_result.execution_time_ms}ms, {len(exec_result.artifacts)} artifacts")
+
+        return AnalysisResult(
+            code=generated.code,
+            description=generated.description,
+            artifacts=[
+                AnalysisArtifact(
+                    artifact_id=a.artifact_id,
+                    filename=a.filename,
+                    content_type=a.content_type,
+                    size_bytes=a.size_bytes,
+                )
+                for a in exec_result.artifacts
+            ],
+            stdout=exec_result.stdout,
+            stderr=exec_result.stderr,
+            execution_time_ms=exec_result.execution_time_ms,
+            error=exec_result.error,
+        )
 
     async def run_streaming(self, user_query: str) -> AsyncGenerator[Dict[str, Any], None]:
         """
@@ -183,7 +306,7 @@ class AgentWorkflow:
 
         Yields dicts with: event, agent, step, data, message fields.
         """
-        # Step 1: Query Parsing
+        # Query Parsing
         yield {"event": "agent_started", "agent": "query_parser", "step": 1}
         parsed_query = await self.agents["query_parser"](user_query=user_query)
         yield {
@@ -196,17 +319,19 @@ class AgentWorkflow:
         # RAG collection resolution
         collections: List[str] = []
         if parsed_query.data_type_keywords:
+            print(f"[RAG] Keywords: {parsed_query.data_type_keywords}")
             collections = resolve_collections_by_keywords(
                 data_type_keywords=parsed_query.data_type_keywords,
                 limit=len(parsed_query.data_type_keywords),
             )
+            print(f"[RAG] Resolved Collections: {collections}")
 
-        # Step 2: Geocoding & Temporal Resolution
+        # Geocoding & Temporal Resolution
         yield {"event": "agent_started", "agent": "geocoding", "step": 2}
         if (
             parsed_query.location
             or parsed_query.datetime
-            or parsed_query.intent == "data_search"
+            or parsed_query.intent in ("data_search", "analysis")
         ):
             geocoding_result = await self.agents["geocoding"](
                 location=parsed_query.location, datetime=parsed_query.datetime
@@ -222,9 +347,9 @@ class AgentWorkflow:
             "data": geocoding_result.model_dump(),
         }
 
-        # Step 3: STAC Coordinator
+        # STAC Coordinator
         yield {"event": "agent_started", "agent": "stac_coordinator", "step": 3}
-        if parsed_query.intent not in ["data_search", "metadata_query"]:
+        if parsed_query.intent not in ["data_search", "metadata_query", "analysis"]:
             stac_search_result = STACSearchResult(
                 count=0,
                 collections=collections,
@@ -251,8 +376,30 @@ class AgentWorkflow:
             "data": stac_search_result.model_dump(),
         }
 
-        # Step 4: Response Synthesis
-        yield {"event": "agent_started", "agent": "response_synthesizer", "step": 4}
+        # Code Generation & Execution (analysis intent only — runs before synthesis)
+        analysis = None
+        if (
+            parsed_query.intent == "analysis"
+            and stac_search_result.count
+            and stac_search_result.count > 0
+        ):
+            yield {"event": "agent_started", "agent": "code_executor", "step": 4}
+            analysis = await self._run_code_execution(
+                user_query=user_query,
+                stac_search_result=stac_search_result,
+                geocoding_result=geocoding_result,
+                collections=collections,
+            )
+            yield {
+                "event": "agent_completed",
+                "agent": "code_executor",
+                "step": 4,
+                "data": analysis.model_dump(),
+            }
+
+        # Response Synthesis (always last)
+        step = 5 if analysis is not None else 4
+        yield {"event": "agent_started", "agent": "response_synthesizer", "step": step}
         final_response = await self.agents["response_synthesizer"](
             user_query=user_query,
             intent=parsed_query.intent,
@@ -261,11 +408,12 @@ class AgentWorkflow:
             date_range=stac_search_result.date_range,
             collections=stac_search_result.collections,
             sample_items=stac_search_result.items or [],
+            analysis=analysis,
         )
         yield {
             "event": "agent_completed",
             "agent": "response_synthesizer",
-            "step": 4,
+            "step": step,
             "data": {"response": final_response},
         }
 
@@ -276,6 +424,7 @@ class AgentWorkflow:
             geocoding_result=geocoding_result,
             stac_search_result=stac_search_result,
             final_response=final_response,
+            analysis=analysis,
         )
         yield {"event": "done", "data": result.to_dict()}
 

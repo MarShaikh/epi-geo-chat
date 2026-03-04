@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.config import get_settings
-from src.api.routes import chat, health, stac, tiles
+from src.api.routes import artifacts, chat, health, stac, tiles
 
 
 def create_app() -> FastAPI:
@@ -32,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
     app.include_router(stac.router, prefix="/api/v1", tags=["stac"])
     app.include_router(tiles.router, prefix="/api/v1", tags=["tiles"])
+    app.include_router(artifacts.router, prefix="/api/v1", tags=["artifacts"])
 
     return app
 

@@ -8,6 +8,7 @@ const AGENT_LABELS: Record<string, string> = {
   geocoding: "Resolving location & time",
   stac_coordinator: "Searching STAC catalog",
   response_synthesizer: "Generating response",
+  code_executor: "Generating & running analysis",
 };
 
 export function useChat() {
@@ -63,6 +64,7 @@ export function useChat() {
                 geocoding: d.geocoding_result as ChatResponse["geocoding"],
                 stac_results: d.stac_results as ChatResponse["stac_results"],
                 response: d.final_response as string,
+                analysis: (d.analysis as ChatResponse["analysis"]) ?? null,
                 trace_id: null,
               };
               dispatch({ type: "SET_LATEST_RESPONSE", response: chatResponse });

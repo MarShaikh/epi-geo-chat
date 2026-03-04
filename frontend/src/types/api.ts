@@ -37,12 +37,30 @@ export interface STACSearchResult {
   license: string | null;
 }
 
+export interface AnalysisArtifact {
+  artifact_id: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+}
+
+export interface AnalysisResult {
+  code: string;
+  description: string;
+  artifacts: AnalysisArtifact[];
+  stdout: string;
+  stderr: string;
+  execution_time_ms: number;
+  error: string | null;
+}
+
 export interface ChatResponse {
   query: string;
   parsed_query: ParsedQuery;
   geocoding: GeocodingResult;
   stac_results: STACSearchResult;
   response: string;
+  analysis?: AnalysisResult | null;
   trace_id: string | null;
 }
 

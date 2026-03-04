@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from src.agents.query_parser import ParsedQuery
 from src.agents.geocoding_temporal import GeocodingResult
 from src.agents.stac_coordinator import STACSearchResult
+from src.code_executor.models import AnalysisResult  # noqa: F401 (re-exported)
 
 
 class ChatRequest(BaseModel):
@@ -24,6 +25,7 @@ class ChatResponse(BaseModel):
     geocoding: GeocodingResult
     stac_results: STACSearchResult
     response: str
+    analysis: Optional[AnalysisResult] = None
     trace_id: Optional[str] = None
 
     @classmethod
@@ -35,6 +37,7 @@ class ChatResponse(BaseModel):
             geocoding=result.geocoding_result,
             stac_results=result.stac_search_result,
             response=result.final_response,
+            analysis=result.analysis,
             trace_id=trace_id,
         )
 
