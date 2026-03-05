@@ -6,9 +6,11 @@ the execution logic for a specific step in the workflow pipeline.
 """
 
 import asyncio
-from typing import Any, List, Optional
+import json as _json
+from typing import Any, Dict, List, Optional
 
 from src.agents.code_generator import GeneratedCode, create_code_generator_agent
+from src.rag.code_sample_retriever import retrieve_code_samples
 from src.agents.geocoding_temporal import GeocodingResult, create_geocoding_agent
 from src.agents.query_parser import ParsedQuery, create_query_parser_agent
 from src.agents.response_synthesizer import create_response_synthesizer_agent
@@ -237,6 +239,7 @@ async def run_code_generator(
     user_query: str,
     stac_result: STACSearchResult,
     geocoding_result: GeocodingResult,
+    collection_overviews: Optional[List[Dict[str, Any]]] = None,
 ) -> GeneratedCode:
     """Generate Python analysis code based on STAC search results.
 
@@ -246,6 +249,36 @@ async def run_code_generator(
     """
     print(f"\n[Code Generator] Generating analysis code...")
     code_gen = create_code_generator_agent()
+
+    # Retrieve relevant code examples to ground generation
+    examples = retrieve_code_samples(user_query, n_results=3)
+    if examples:
+        print(f"  Retrieved {len(examples)} code sample(s) for RAG: {[e['filepath'] for e in examples]}")
+
+    # Build collection context section
+    collection_context = ""
+    if collection_overviews:
+        collection_context = "\n\n    DATA CONTEXT — what these collections contain:\n"
+        for ov in collection_overviews:
+            if "error" in ov:
+                continue
+            collection_context += f"""
+    Collection: {ov['id']}
+      Title: {ov.get('title', 'N/A')}
+      Description: {ov.get('description', 'N/A')}
+      Keywords: {', '.join(ov.get('keywords', []))}
+      Providers: {', '.join(ov.get('providers', []))}"""
+            if ov.get("item_assets"):
+                collection_context += "\n      Assets per item:"
+                for asset_key, asset_info in ov["item_assets"].items():
+                    title = asset_info.get("title", "")
+                    desc = asset_info.get("description", "")
+                    atype = asset_info.get("type", "")
+                    label = title or desc or atype
+                    collection_context += f"\n        - {asset_key}: {label} ({atype})"
+            if ov.get("summaries"):
+                collection_context += f"\n      Summaries: {_json.dumps(ov['summaries'], default=str)[:500]}"
+            collection_context += "\n"
 
     prompt = f"""
     User query: "{user_query}"
@@ -262,10 +295,16 @@ async def run_code_generator(
             for item in (stac_result.items or [])[:10]
         ]
     }
-
+    {collection_context}
     Generate a Python script that answers the user's analysis query using this data.
     The script will receive the full item list (with signed asset URLs) in /workspace/input/data.json.
+    Use the collection metadata above to understand what the data represents (units, bands, variable meanings).
     """
+
+    if examples:
+        prompt += "\n\nREFERENCE EXAMPLES — working code patterns to adapt (do not copy verbatim):\n"
+        for i, ex in enumerate(examples, 1):
+            prompt += f"\n--- Example {i}: {ex['filepath']} ---\n{ex['source']}\n"
 
     response = await code_gen.run(prompt, options={"response_format": GeneratedCode})
     generated = response.value

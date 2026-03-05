@@ -224,14 +224,18 @@ class AgentWorkflow:
         """
         import asyncio
 
-        # 5a: Generate code
+        # 5a: Fetch collection metadata to give the code generator data context
+        collection_overviews = await self._fetch_collection_overviews(collections)
+
+        # 5b: Generate code
         generated = await self.agents["code_generator"](
             user_query=user_query,
             stac_result=stac_search_result,
             geocoding_result=geocoding_result,
+            collection_overviews=collection_overviews,
         )
 
-        # 5b: Validate code
+        # 5c: Validate code
         validation = _code_validator.validate(generated.code)
         if not validation.is_safe:
             print(f"[Code Executor] Code validation failed: {validation.violations}")
@@ -241,7 +245,7 @@ class AgentWorkflow:
                 error=f"Code validation failed: {'; '.join(validation.violations)}",
             )
 
-        # 5c: Re-fetch full items with signed asset URLs from GeoCatalog
+        # 5d: Re-fetch full items with signed asset URLs from GeoCatalog
         print("[Code Executor] Fetching full STAC items with signed asset URLs...")
         catalog_client = GeoCatalogClient()
         raw_results = await asyncio.to_thread(
@@ -253,7 +257,7 @@ class AgentWorkflow:
         )
         full_items = raw_results.get("features", [])
 
-        # 5d: Build input data for sandbox
+        # 5e: Build input data for sandbox
         input_data = {
             "user_query": user_query,
             "bbox": geocoding_result.bbox,
@@ -274,7 +278,7 @@ class AgentWorkflow:
             ],
         }
 
-        # 5e: Execute in Docker sandbox
+        # 5f: Execute in Docker sandbox
         print(f"[Code Executor] Executing code in sandbox ({len(full_items)} items)...")
         sandbox = DockerSandbox(_artifact_store)
         exec_result = await sandbox.execute(generated.code, input_data)
@@ -299,6 +303,51 @@ class AgentWorkflow:
             execution_time_ms=exec_result.execution_time_ms,
             error=exec_result.error,
         )
+
+    async def _fetch_collection_overviews(
+        self, collections: List[str]
+    ) -> List[Dict[str, Any]]:
+        """Fetch concise metadata for each collection to give the code generator data context.
+
+        Returns a list of dicts with: id, description, keywords, providers.
+        """
+        import asyncio
+
+        if not collections:
+            return []
+
+        catalog_client = GeoCatalogClient()
+        overviews = []
+        for coll_id in collections:
+            try:
+                coll_info = await asyncio.to_thread(
+                    catalog_client.get_collection, coll_id
+                )
+                overviews.append({
+                    "id": coll_id,
+                    "title": coll_info.get("title", ""),
+                    "description": coll_info.get("description", ""),
+                    "keywords": coll_info.get("keywords", []),
+                    "license": coll_info.get("license", ""),
+                    "providers": [
+                        p.get("name", "") for p in coll_info.get("providers", [])
+                    ],
+                    "summaries": coll_info.get("summaries", {}),
+                    "item_assets": {
+                        k: {
+                            "title": v.get("title", ""),
+                            "type": v.get("type", ""),
+                            "description": v.get("description", ""),
+                        }
+                        for k, v in coll_info.get("item_assets", {}).items()
+                    },
+                })
+            except Exception as e:
+                print(f"[Workflow] Could not fetch metadata for {coll_id}: {e}")
+                overviews.append({"id": coll_id, "error": str(e)})
+
+        print(f"[Workflow] Fetched metadata for {len(overviews)} collection(s)")
+        return overviews
 
     async def run_streaming(self, user_query: str) -> AsyncGenerator[Dict[str, Any], None]:
         """
