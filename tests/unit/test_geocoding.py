@@ -56,14 +56,15 @@ class TestGeoCodingServiceUnit:
     @pytest.mark.asyncio
     @patch("src.stac.geocoding.MapsSearchClient")
     async def test_geocode_no_results(self, mock_maps_client):
-        """Test geocoding returns None for invalid location"""
+        """Test geocoding returns None when Azure Maps and LLM both return nothing"""
         mock_client_instance = MagicMock()
         mock_maps_client.return_value = mock_client_instance
         mock_response = {"features": []}
         mock_client_instance.get_geocoding.return_value = mock_response
 
         geocoder = GeoCodingService()
-        result = await geocoder.geocode("Woolpack Lane")
+        with patch.object(geocoder, "_llm_geocode", return_value=None):
+            result = await geocoder.geocode("Woolpack Lane")
 
         assert result is None
 

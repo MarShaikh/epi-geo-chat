@@ -38,7 +38,7 @@ def test_get_item_success(mock_from_dict, mock_get, mock_credential):
         mock_get.assert_called_once_with(
             "https://test-catalog.com/stac/collections/collection-1/items/item-123",
             headers={"Authorization": "Bearer test-token"},
-            params={"api-version": "2025-04-03-preview"},
+            params={"api-version": "2025-04-03-preview", "sign": "true"},
         )
 
         # Verify response handling
