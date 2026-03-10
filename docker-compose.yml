@@ -17,7 +17,7 @@ services:
       - ~/.azure:/root/.azure
       # Shared temp directory for sandbox input/output — the Docker daemon resolves
       # bind mounts relative to the host, so the backend and sandbox containers must
-      # both use a host-visible path. See docs/infra/local-development.md for details.
+      # both use a host-visible path. See docs/local-development.md for details.
       - /tmp/epi-sandbox:/tmp/epi-sandbox
     depends_on:
       sandbox:

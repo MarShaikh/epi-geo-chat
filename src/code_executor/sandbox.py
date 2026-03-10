@@ -24,7 +24,7 @@ from src.code_executor.artifact_store import ArtifactInfo, ArtifactStore
 # Docker socket, bind mount paths must be resolvable by the Docker daemon
 # (i.e. on the host). SANDBOX_TEMP_DIR sets a shared directory that is
 # mounted into both the backend container and visible to the host.
-# See docs/infra/local-development.md for details.
+# See docs/local-development.md for details.
 SANDBOX_TEMP_DIR = os.environ.get("SANDBOX_TEMP_DIR", None)
 
 

@@ -29,7 +29,7 @@ for coll in collections.get("collections", []):
         inventory[collection_id] = {"error": str(e)}
 
 # save to file
-output_path = Path("docs/stac_inventory.json")
+output_path = Path("data/stac_inventory.json")
 output_path.parent.mkdir(parents=True, exist_ok=True)
 with open(output_path, "w") as f:
     json.dump(inventory, f, indent=2)

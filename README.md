@@ -1,22 +1,18 @@
 # Epi-Geo Chat: AI-Powered Geospatial Data Query System
 
-A multi-agent chat interface for querying geospatial climate data.
+A multi-agent chat interface for querying and analysing geospatial climate data stored in Azure GeoCatalog.
 
 ---
 
 ## Overview
 
-Ask natural language questions about climate data and get intelligent responses:
+Ask natural language questions about climate data and get intelligent responses, visualisations, and automated analysis:
 
 - *"Show me rainfall in Lagos for February 2024"*
-- *"What's the temperature trend in Kano last month?"*
-- *"Get me vegetation data for Nigeria in 2023"*
+- *"What collections do we have?"*
+- *"Show me a precipitation trend chart for Kano in 2023"*
 
-The system uses a 4-agent pipeline to:
-1. Parse natural language queries
-2. Resolve locations and dates
-3. Search the Azure GeoCatalog STAC API
-4. Generate natural language summaries
+The system uses a **5-agent pipeline** with intent-based routing to parse queries, resolve locations, search STAC catalogs, generate analysis code, and synthesise responses.
 
 ---
 
@@ -24,191 +20,85 @@ The system uses a 4-agent pipeline to:
 
 ### Tech Stack
 
-**AI Framework:**
-- Microsoft Agent Framework (Preview)
-- Azure OpenAI GPT-4o (Sweden Central)
-- Pydantic for structured outputs
-
-**Data Layer:**
-- Azure GeoCatalog (STAC API)
-- Azure Maps (Geocoding)
-- Azure Blob Storage (COG assets)
-- ChromaDB for RAG-based collection resolution
-
-**Observability:**
-- Azure Monitor (Application Insights)
-- OpenTelemetry tracing with custom decorators
-- Per-agent span capture with argument/output serialization
-
-**Evaluations:**
-- Custom evaluation framework with golden dataset
-- Accuracy, Precision, Recall, and IoU metrics
-
-**Future Components:**
-- FastAPI backend
-- React + TypeScript frontend
-- Docker for code execution
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.12 + FastAPI (async) |
+| **LLM / Agents** | Azure OpenAI GPT-4o via Microsoft Agent Framework |
+| **STAC Catalog** | Azure GeoCatalog (STAC API + TiTiler) |
+| **Vector Store** | ChromaDB (Azure Container Apps + Azure File Share) |
+| **Code Execution** | Docker sandbox (`epi-geo-sandbox:latest`) |
+| **Frontend** | React 18 + TypeScript + Vite + Tailwind CSS v4 + Leaflet |
+| **Observability** | OpenTelemetry + Azure Monitor |
 
 ### Agent Pipeline
 
 ```
-User Query → Parser → Collection Resolver (RAG) → Geocoder → STAC Search → Synthesizer → Response
+User Query -> Parser -> RAG Collection Resolver -> Geocoder -> STAC Search -> [Code Gen + Sandbox] -> Synthesiser -> Response
 ```
 
-**Agent 1: Query Parser**
-- Extracts intent, collections, location, and temporal references
-- Returns: `ParsedQuery` (Pydantic model)
+Each agent uses Pydantic structured outputs for type-safe handoffs. The code generation step only runs for `analysis` intent queries. See [docs/agent_architecture.md](docs/agent_architecture.md) for full details.
 
-**Agent 2: Geocoding & Temporal Resolver**
-- Converts locations to bounding boxes using 3-tier fallback:
-  1. Local lookup (predefined regions)
-  2. Azure Maps API
-  3. LLM fallback
-- Converts relative dates ("last month") to ISO 8601
-- Returns: `GeocodingResult` with bbox and datetime
+### Key Components
 
-**Agent 3: STAC Query Coordinator**
-- Searches Azure GeoCatalog STAC API
-- Uses `search_and_summarize()` function to process results
-- Returns: `STACSearchResult` with count, date range, and sample items
-
-**Agent 4: Response Synthesizer**
-- Generates natural language response from search results
-- Returns: User-friendly summary
-
-### RAG: Collection Resolution
-
-The system uses **ChromaDB** for semantic collection resolution. User keywords (e.g., "rainfall", "temperature") are matched against indexed STAC collection metadata to find the most relevant collection IDs, avoiding hardcoded mappings.
-
-- `CollectionVectorStore` (`src/rag/vector_store.py`) — Indexes collection titles, descriptions, and keywords into ChromaDB; performs semantic search
-- `resolve_collections_by_keywords()` (`src/rag/collection_resolver.py`) — Convenience function used in the agent workflow
-- `scripts/index_collections.py` — Populates the vector store from the GeoCatalog API
-
-See [docs/rag.md](docs/rag.md) for details.
-
-### Observability
-
-End-to-end tracing with **Azure Monitor OpenTelemetry**. Each agent is decorated with `@traced_agent` to capture inputs/outputs as span attributes, with workflow-level trace ID correlation in Application Insights.
-
-See [docs/observability.md](docs/observability.md) for details.
-
-### Evaluations
-
-Custom evaluation framework with a golden dataset of 8 annotated queries. Computes accuracy, precision, recall per field, and bounding box IoU.
-
-```bash
-python tests/evaluation/evaluate.py
-```
-
-See [docs/evaluations.md](docs/evaluations.md) for details.
+- **RAG Collection Resolution** — ChromaDB semantic search maps user keywords to STAC collection IDs. See [docs/rag.md](docs/rag.md).
+- **Observability** — Per-agent tracing with `@traced_agent` decorators and Azure Monitor. See [docs/observability.md](docs/observability.md).
+- **Evaluations** — Golden dataset with accuracy, precision, recall, and bbox IoU metrics. See [docs/evaluations.md](docs/evaluations.md).
 
 ---
 
-## Setup
+## Quick Start
 
 ### Prerequisites
 
 - Python 3.11+
-- Azure subscription
-- Azure CLI
+- Node.js 18+
+- Docker
+- Azure CLI (authenticated)
 
-### 1. Azure Infrastructure
-
-#### Azure OpenAI (Sweden Central)
-
-```bash
-# Create resource
-az cognitiveservices account create \
-  --name <name> \
-  --resource-group <resource-group-name> \
-  --location swedencentral \
-  --kind OpenAI \
-  --sku s0 \
-  --custom-domain <custom-domain-name>
-
-# Get endpoint
-az cognitiveservices account show \
-  --name  \
-  --resource-group <resource-group-name> \
-  | jq -r .properties.endpoint
-
-# Get API key
-az cognitiveservices account keys list \
-  --name <name> \
-  --resource-group <resource-group-name> \
-  | jq -r .key1
-
-# Deploy GPT-4o
-az cognitiveservices account deployment create \
-  --name <name> \
-  --resource-group <resource-group-name> \
-  --deployment-name gpt-4o \
-  --model-name gpt-4o \
-  --model-version "2024-11-20" \
-  --model-format OpenAI \
-  --sku-capacity 10 \
-  --sku-name "GlobalStandard"
-```
-
-#### Azure Maps
+### Local Development (Docker Compose)
 
 ```bash
-# Create Maps account
-az maps account create \
-  -n <name> \
-  -g <resource-group-name> \
-  --sku G2 \
-  --kind "Gen2"
-
-# Get key
-az maps account keys list -n <name> -g <resource-group-name>
-```
-
-#### (Optional) Key Vault
-
-```bash
-# Create Key Vault
-az keyvault create -n <keyvault-name> -g <resource-group-name> -l westeurope
-
-# Store Maps key
-AZURE_MAPS_KEY=$(az maps account keys list -n <name> --query primaryKey -o tsv)
-az keyvault secret set \
-  --vault-name <keyvault-name> \
-  --name AzureMapsPrimaryKey \
-  --value "$AZURE_MAPS_KEY"
-```
-
-### 2. Local Development
-
-```bash
-# Clone repository
-git clone <repo-url>
-cd epi-geo-chat
-
-# Create virtual environment
-conda create -n epi-geo-chat python=3.11 -y
-conda activate epi-geo-chat
-
-# Install dependencies
-pip install -r requirements/base.txt
-
-# Configure environment
+# Clone and configure
+git clone <repo-url> && cd epi-geo-chat
 cp .env.example .env
-# Add your credentials to .env:
-# - AZURE_OPENAI_ENDPOINT
-# - AZURE_OPENAI_API_KEY
-# - AZURE_OPENAI_CHAT_DEPLOYMENT=gpt-4o
-# - GEOCATALOG_URL
-# - GEOCATALOG_SCOPE
-# - AZURE_MAPS_SUBSCRIPTION_KEY
-# - CHROMA_CLIENT_URL                      (for RAG collection resolution)
-# - APPLICATIONINSIGHTS_CONNECTION_STRING  (for observability)
+# Edit .env with your credentials (see Environment Variables below)
 
-# Test setup
-python scripts/test_agent_framework.py
-python scripts/test_stac.py
-python scripts/test_geocoding.py
-python scripts/test_workflow.py
+# Build sandbox image
+docker build -t epi-geo-sandbox:latest src/code_executor/docker/
+
+# Start all services
+docker compose up --build
+```
+
+Backend runs on `http://localhost:8000`, frontend on `http://localhost:5173`.
+
+### Manual Setup
+
+```bash
+# Backend
+conda create -n epi-geo-chat python=3.12 -y && conda activate epi-geo-chat
+pip install -r requirements/base.txt
+uvicorn src.api.app:app --reload --port 8000
+
+# Frontend
+cd frontend && npm install && npm run dev
+
+# Index ChromaDB (once, or when collections change)
+python scripts/index_collections.py
+```
+
+### Environment Variables
+
+```env
+AZURE_OPENAI_ENDPOINT=
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+AZURE_OPENAI_API_VERSION=preview
+GEOCATALOG_URL=
+GEOCATALOG_SCOPE=
+AZURE_MAPS_SUBSCRIPTION_KEY=
+CHROMA_CLIENT_URL=
+APPLICATIONINSIGHTS_CONNECTION_STRING=   # optional
 ```
 
 ---
@@ -218,107 +108,72 @@ python scripts/test_workflow.py
 ```
 epi-geo-chat/
 ├── src/
-│   ├── agents/
-│   │   ├── agent_config.py
-│   │   ├── agent_runners.py       # Agent execution with tracing
-│   │   ├── query_parser.py
-│   │   ├── geocoding_temporal.py
-│   │   ├── stac_coordinator.py
-│   │   ├── response_synthesizer.py
-│   │   └── workflow.py            # Orchestration with workflow-level tracing
-│   ├── stac/
-│   │   ├── catalog_client.py
-│   │   └── geocoding.py
-│   ├── rag/
-│   │   ├── collection_resolver.py
-│   │   └── vector_store.py
-│   └── utils/
-│       ├── logging_config.py
-│       └── observability.py
-│
-├── tests/
-│   ├── evaluation/
-│   │   ├── evaluate.py
-│   │   └── results.json
-│   ├── unit/
-│   │   ├── test_agent_framework.py
-│   │   ├── test_catalog_client.py
-│   │   └── test_geocoding.py
-│   ├── fixtures/
-│   │   ├── sample_queries.json    # Golden dataset
-│   │   └── env.py
-│   └── conftest.py
-│
-├── scripts/
-│   ├── test_workflow.py
-│   ├── inventory_stac.py
-│   └── index_collections.py
-│
-├── docs/
-│   ├── agent_architecture.md
-│   ├── agent_framework.md
-│   ├── evaluations.md
-│   ├── observability.md
-│   ├── rag.md
-│   ├── nigeria_state_bboxes.json
-│   └── stac_inventory.json
-│
-├── requirements/
-│   └── base.txt
-│
-├── .gitignore
-├── pyproject.toml
-└── README.md
+│   ├── agents/                    # 5-agent pipeline
+│   │   ├── workflow.py            # AgentWorkflow orchestrator
+│   │   ├── agent_runners.py       # Typed async wrappers with tracing
+│   │   ├── agent_config.py        # Azure OpenAI client factory
+│   │   ├── query_parser.py        # Agent 1: intent + extraction
+│   │   ├── geocoding_temporal.py  # Agent 2: bbox + datetime
+│   │   ├── stac_coordinator.py    # Agent 3: STAC search
+│   │   ├── code_generator.py      # Agent 4: analysis code gen
+│   │   └── response_synthesizer.py # Agent 5: final response
+│   ├── api/                       # FastAPI backend
+│   │   ├── app.py
+│   │   ├── schemas.py
+│   │   └── routes/                # chat, stac, tiles, artifacts, health
+│   ├── code_executor/             # Sandboxed code execution
+│   │   ├── validator.py           # AST security validation
+│   │   ├── sandbox.py             # Docker sandbox
+│   │   ├── artifact_store.py      # File store with 60-min TTL
+│   │   └── docker/Dockerfile
+│   ├── rag/                       # ChromaDB vector store + resolvers
+│   └── stac/                      # GeoCatalog client + geocoding
+│       └── data/                  # Lookup data (state bboxes)
+├── frontend/src/                  # React + TypeScript + Leaflet
+│   ├── components/
+│   │   ├── chat/                  # Chat panel + agent progress
+│   │   ├── map/                   # Map + draw control + tile overlay
+│   │   ├── results/               # STAC results display
+│   │   ├── explorer/              # STAC Explorer (direct browsing)
+│   │   └── analysis/              # Code + artifacts display
+│   ├── context/                   # Global state (useReducer)
+│   └── hooks/                     # useChat, useMap, useExplorer
+├── data/                          # Generated data (STAC inventory)
+├── infra/                         # Infrastructure configs
+├── tests/                         # Unit tests + evaluation framework
+├── scripts/                       # Index collections, test scripts
+├── docs/                          # Architecture, RAG, observability docs
+└── docker-compose.yml             # Local dev orchestration
 ```
 
 ---
 
-## Current Status
+## API Endpoints
 
-### Completed
-
-- 4-agent sequential workflow with structured outputs
-- 3-tier geocoding (Local → Azure Maps → LLM)
-- STAC catalog integration
-- Logging infrastructure
-- End-to-end testing
-- Observability with Azure Monitor OpenTelemetry (per-agent tracing with argument/output capture)
-- Evaluation framework with golden dataset (accuracy, precision, recall, bounding box IoU)
-- Sub-intent classification in agent pipeline
-- RAG collection resolver and vector store
-- Agent execution refactored into `agent_runners.py` with traced decorators
-
-### In Progress
-
-- Unit and integration test coverage
-- Documentation
-
-### Planned
-
-- FastAPI backend with REST API
-- React frontend with map visualization
-- Code generation and sandboxed execution
-- User authentication
-- Query history and caching
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | Liveness check |
+| GET | `/health/ready` | Readiness (validates ChromaDB) |
+| POST | `/api/v1/chat` | Synchronous chat |
+| GET | `/api/v1/chat/stream` | SSE streaming chat |
+| GET | `/api/v1/stac/collections` | List STAC collections |
+| POST | `/api/v1/stac/search` | Search items (bbox, datetime, collections) |
+| GET | `/api/v1/tiles/{collection}/{item}/crop/{bbox}.png` | Tile proxy |
+| GET | `/api/v1/artifacts/{artifact_id}` | Serve analysis output files |
 
 ---
 
-## Usage Examples
+## Documentation
 
-```python
-from src.agents.workflow import process_query
+| Document | Description |
+|---|---|
+| [agent_architecture.md](docs/agent_architecture.md) | Full pipeline flow, agent details, mermaid diagram |
+| [rag.md](docs/rag.md) | ChromaDB setup, collection resolution, infrastructure |
+| [observability.md](docs/observability.md) | OpenTelemetry tracing setup |
+| [evaluations.md](docs/evaluations.md) | Evaluation framework and metrics |
+| [agent_framework.md](docs/agent_framework.md) | Framework choice rationale |
+| [local-development.md](docs/local-development.md) | Docker Compose setup and troubleshooting |
 
-# Run a query
-result = await process_query("Show me rainfall in Lagos for February 2024")
-print(result.final_response)
-```
-
-Expected output:
-```
-I found 28 CHIRPS rainfall measurements for Lagos in February 2024.
-The data covers February 1-29, 2024. You can visualize this data
-as a time series or calculate monthly averages.
-```
 ---
 
 ## Contact
@@ -326,4 +181,4 @@ as a time series or calculate monthly averages.
 **Marouf Shaikh**
 GitHub: MarShaikh
 
-Inspired by [Microsoft Earth Copilot](https://github.com/microsoft/Earth-Copilot) (simplified from 13 to 4 agents).
+Inspired by [Microsoft Earth Copilot](https://github.com/microsoft/Earth-Copilot) (simplified from 13 to 5 agents).

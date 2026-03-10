@@ -24,7 +24,7 @@ REGION = {
 
 # Load state-level bounding boxes from JSON file
 region_file_path = os.path.join(
-    os.path.dirname(__file__), "../../docs/nigeria_state_bboxes.json"
+    os.path.dirname(__file__), "data/nigeria_state_bboxes.json"
 )
 with open(region_file_path, "r") as f:
     region_file = json.load(f)

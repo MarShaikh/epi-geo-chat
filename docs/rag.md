@@ -85,3 +85,91 @@ chromadb  # in requirements/base.txt
 ## How It Fits in the Pipeline
 
 The RAG collection resolver is called during the agent workflow to map data type keywords extracted by the Query Parser (Agent 1) into concrete STAC collection IDs before passing them to the STAC Coordinator (Agent 3).
+
+## ChromaDB Infrastructure on Azure Container Apps
+
+ChromaDB is hosted as a Container App on Azure with persistent storage via Azure File Share.
+
+### Azure Resources
+
+| Resource | Name | Details |
+|---|---|---|
+| **Storage Account** | `mpcpstorageaccount` | Existing account in `rg_mpcp` |
+| **Azure File Share** | `epi-geo-chromadb` | Persistent volume for ChromaDB data |
+| **Container Apps Environment** | `epi-geo-container-env` | West Europe region |
+| **Container App** | `chromadb-vector-store` | `chromadb/chroma:latest` image, 0.5 CPU / 1Gi RAM |
+
+### Setup Steps
+
+**1. Create the Azure File Share:**
+
+```bash
+az storage share create \
+  --name epi-geo-chromadb \
+  --account-name $STORAGE_ACCOUNT_NAME \
+  --account-key $STORAGE_ACCOUNT_KEY
+```
+
+**2. Create the Container Apps Environment:**
+
+```bash
+az containerapp env create \
+  --name $CONTAINER_ENVIRONMENT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location westeurope
+```
+
+**3. Register the file share as a storage definition in the environment:**
+
+This tells the Container Apps Environment that the Azure File Share exists and apps can mount it.
+
+```bash
+az containerapp env storage set \
+  --name $CONTAINER_ENVIRONMENT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --storage-name epi-geo-chromadb \
+  --azure-file-account-name $STORAGE_ACCOUNT_NAME \
+  --azure-file-account-key $STORAGE_ACCOUNT_KEY \
+  --azure-file-share-name epi-geo-chromadb \
+  --access-mode ReadWrite
+```
+
+> **Note:** The `--storage-name` is a reference name used in the container app deployment to identify the mount. The `--azure-file-share-name` must match the actual file share created in step 1. A mismatch here causes a `VolumeMountFailure` with exit code 1.
+
+**4. Deploy the Container App:**
+
+```bash
+az containerapp create \
+  --name chromadb-vector-store \
+  --resource-group $RESOURCE_GROUP \
+  --environment $CONTAINER_ENVIRONMENT_NAME \
+  --image chromadb/chroma:latest \
+  --target-port 8000 \
+  --ingress external \
+  --min-replicas 1 --max-replicas 1 \
+  --cpu 0.5 --memory 1Gi
+```
+
+Key configuration:
+- **Image:** `chromadb/chroma:latest` on port 8000
+- **Ingress:** External, HTTPS only
+- **Scale:** Fixed at 1 replica
+- **Volume mount:** Azure File Share mounted at `/chroma/chroma` for data persistence
+- **Revision mode:** Single (one active revision at a time)
+
+**5. Verify the deployment with a health check:**
+
+```bash
+curl https://<FQDN>/api/v2/heartbeat
+# Expected: {"nanosecond heartbeat": ...}
+```
+
+### Populating the Vector Store
+
+After deployment, the ChromaDB instance must be indexed before the agent workflow can resolve collections:
+
+```bash
+python scripts/index_collections.py
+```
+
+This fetches all collections from the GeoCatalog API and indexes their metadata into the `stac_collections` ChromaDB collection. Re-run this script whenever new collections are added to the catalog.
