@@ -8,6 +8,7 @@ Network access is allowed so rasterio/GDAL can fetch COGs via signed URLs.
 
 import asyncio
 import json
+import os
 import tempfile
 import time
 from dataclasses import dataclass, field
@@ -18,6 +19,13 @@ import docker
 from docker.errors import APIError, ContainerError, ImageNotFound
 
 from src.code_executor.artifact_store import ArtifactInfo, ArtifactStore
+
+# When the backend runs inside Docker and spawns sandbox containers via the
+# Docker socket, bind mount paths must be resolvable by the Docker daemon
+# (i.e. on the host). SANDBOX_TEMP_DIR sets a shared directory that is
+# mounted into both the backend container and visible to the host.
+# See docs/infra/local-development.md for details.
+SANDBOX_TEMP_DIR = os.environ.get("SANDBOX_TEMP_DIR", None)
 
 
 @dataclass
@@ -72,7 +80,9 @@ class DockerSandbox:
     ) -> ExecutionResult:
         """Synchronous Docker execution (called via asyncio.to_thread)"""
 
-        tmpdir = tempfile.mkdtemp(prefix="epi-sandbox-")
+        tmpdir = tempfile.mkdtemp(
+            prefix="epi-sandbox-", dir=SANDBOX_TEMP_DIR
+        )
         input_dir = Path(tmpdir) / "input"
         output_dir = Path(tmpdir) / "output"
         input_dir.mkdir()

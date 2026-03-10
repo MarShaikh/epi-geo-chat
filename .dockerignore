@@ -1,0 +1,41 @@
+# Version control
+.git
+.gitignore
+
+# Frontend (has its own build process)
+frontend/node_modules
+frontend/dist
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.pytest_cache
+.coverage
+htmlcov
+
+# Environment
+.env
+.env.*
+.venv
+venv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation (keep data files like nigeria_state_bboxes.json, exclude the rest)
+docs/*.md
+tests/
+*.md
+LICENSE
+
+# Infrastructure
+infra/
+
+# OS files
+.DS_Store
+Thumbs.db
