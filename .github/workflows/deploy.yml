@@ -1,0 +1,149 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  ACR_NAME: epigeochatacr
+  RESOURCE_GROUP: rg_mpcp
+  BACKEND_APP_NAME: epi-geo-chat-backend
+  BACKEND_IMAGE: epi-geo-backend
+  SANDBOX_IMAGE: epi-geo-sandbox
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements/base.txt -r requirements/test.txt
+          pip install -e .
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
+  build-backend:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "tag=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push backend image
+        run: |
+          az acr login --name $ACR_NAME
+          docker build -t $ACR_NAME.azurecr.io/$BACKEND_IMAGE:${{ steps.meta.outputs.tag }} \
+                       -t $ACR_NAME.azurecr.io/$BACKEND_IMAGE:latest .
+          docker push $ACR_NAME.azurecr.io/$BACKEND_IMAGE --all-tags
+
+  build-sandbox:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "tag=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push sandbox image
+        run: |
+          az acr login --name $ACR_NAME
+          docker build -t $ACR_NAME.azurecr.io/$SANDBOX_IMAGE:${{ steps.meta.outputs.tag }} \
+                       -t $ACR_NAME.azurecr.io/$SANDBOX_IMAGE:latest \
+                       -f src/code_executor/docker/Dockerfile src/code_executor/docker/
+          docker push $ACR_NAME.azurecr.io/$SANDBOX_IMAGE --all-tags
+
+  deploy-backend:
+    needs: [build-backend, build-sandbox]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy backend Container App
+        run: |
+          az containerapp update \
+            --name $BACKEND_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --image $ACR_NAME.azurecr.io/$BACKEND_IMAGE:${{ needs.build-backend.outputs.image-tag }}
+
+  build-frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install and build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+
+  deploy-frontend:
+    needs: build-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
+          action: upload
+          app_location: frontend
+          output_location: dist
+          skip_app_build: true
