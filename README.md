@@ -14,6 +14,14 @@ Ask natural language questions about climate data and get intelligent responses,
 
 The system uses a **5-agent pipeline** with intent-based routing to parse queries, resolve locations, search STAC catalogs, generate analysis code, and synthesise responses.
 
+### Demos
+
+#### Chat Demo
+<video src="docs/demos/chat-demo.mp4" controls width="100%"></video>
+
+#### Map Exploration
+<video src="docs/demos/map-exploration.mp4" controls width="100%"></video>
+
 ---
 
 ## Architecture
