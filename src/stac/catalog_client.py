@@ -13,7 +13,10 @@ class GeoCatalogClient:
     def __init__(self):
         self.catalog_url = os.environ.get("GEOCATALOG_URL")
         self.scope = os.environ.get("GEOCATALOG_SCOPE")
-        self.credential = DefaultAzureCredential()
+        managed_identity_client_id = os.environ.get("AZURE_CLIENT_ID")
+        self.credential = DefaultAzureCredential(
+            managed_identity_client_id=managed_identity_client_id
+        )
 
     def _get_headers(self) -> Dict:
         if not self.scope:

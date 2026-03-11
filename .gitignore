@@ -16,3 +16,4 @@ docs_/
 logs/
 data/
 !src/stac/data/
+.terraform/
