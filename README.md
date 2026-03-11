@@ -17,14 +17,10 @@ The system uses a **5-agent pipeline** with intent-based routing to parse querie
 ### Demos
 
 #### Chat Demo
-<video src="https://github.com/user-attachments/assets/736220b0-0b13-4803-9fb6-dc20dd7d08ec" controls width="100%"></video>
-
-#### Map Exploration
 <video src="https://github.com/user-attachments/assets/78e5354e-7d6d-422c-8c83-0c7170580d2d" controls width="100%"></video>
 
-
-
-00%"></video>
+#### Map Exploration
+<video src="https://github.com/user-attachments/assets/736220b0-0b13-4803-9fb6-dc20dd7d08ec" controls width="100%"></video>
 
 ---
 
